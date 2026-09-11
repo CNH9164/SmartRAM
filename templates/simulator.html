@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator — SmartRAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="sim-body">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark glass-nav">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-microchip me-2 text-accent"></i>SmartRAM
+            </a>
+            <div class="ms-auto d-flex gap-2 align-items-center">
+                <span class="badge bg-success-soft text-success rounded-pill px-3">
+                    <i class="fas fa-circle me-1" style="font-size:.5rem;vertical-align:middle;"></i>Simulator
+                </span>
+                <a href="/" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="sim-container">
+
+        <!-- ===== LEFT SIDEBAR — Controls ===== -->
+        <aside class="sim-sidebar">
+            <div class="sidebar-inner">
+                <h6 class="sidebar-heading">Configuration</h6>
+
+                <!-- Scenario Presets -->
+                <div class="mb-3">
+                    <label class="form-label text-light-muted small">Quick Scenario</label>
+                    <select id="scenarioSelect" class="form-select form-select-sm bg-dark-card text-white border-dark-2">
+                        <option value="">— Custom —</option>
+                    </select>
+                    <p id="scenarioDesc" class="text-light-muted" style="font-size:.7rem;margin-top:4px;min-height:20px;"></p>
+                </div>
+
+                <hr class="border-dark-2">
+
+                <!-- Reference String -->
+                <div class="mb-3">
+                    <label for="refString" class="form-label text-light-muted small">
+                        Reference String
+                        <span class="ms-1" data-bs-toggle="tooltip" title="Space-separated page numbers (e.g. 7 0 1 2 0 3)">
+                            <i class="fas fa-circle-question text-muted"></i>
+                        </span>
+                    </label>
+                    <input type="text" id="refString" class="form-control form-control-sm bg-dark-card text-white border-dark-2"
+                        placeholder="e.g. 7 0 1 2 0 3 0 4 2 3 0 3 2"
+                        value="7 0 1 2 0 3 0 4 2 3 0 3 2">
+                    <div id="refStringError" class="form-error"></div>
+                </div>
+
+                <!-- Frames -->
+                <div class="mb-3">
+                    <label for="numFrames" class="form-label text-light-muted small">
+                        Number of Frames
+                        <span class="text-accent fw-bold" id="frameDisplay">3</span>
+                    </label>
+                    <input type="range" id="numFrames" class="form-range accent-range"
+                        min="1" max="8" value="3" oninput="document.getElementById('frameDisplay').textContent=this.value">
+                    <div class="d-flex justify-content-between" style="font-size:.7rem;color:#888;">
+                        <span>1</span><span>4</span><span>8</span>
+                    </div>
+                </div>
+
+                <!-- Algorithm -->
+                <div class="mb-4">
+                    <label class="form-label text-light-muted small">Algorithm</label>
+                    <div class="algo-btns">
+                        <button class="algo-btn algo-btn-active" data-algo="FIFO">FIFO</button>
+                        <button class="algo-btn" data-algo="LRU">LRU</button>
+                        <button class="algo-btn" data-algo="OPTIMAL">OPT</button>
+                        <button class="algo-btn algo-btn-compare" data-algo="ALL">Compare All</button>
+                    </div>
+                </div>
+
+                <!-- Run Controls -->
+                <button id="btnRun" class="btn btn-accent w-100 mb-2 fw-bold">
+                    <i class="fas fa-play me-2"></i>Run Simulation
+                </button>
+                <button id="btnReset" class="btn btn-outline-secondary w-100 btn-sm">
+                    <i class="fas fa-rotate me-1"></i>Reset
+                </button>
+
+                <hr class="border-dark-2 mt-4">
+
+                <!-- Step controls -->
+                <h6 class="sidebar-heading">Playback</h6>
+                <div class="d-flex gap-2 mb-2 justify-content-center">
+                    <button id="btnPrev" class="btn btn-sm btn-outline-secondary" disabled>
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button id="btnAutoPlay" class="btn btn-sm btn-outline-info" disabled>
+                        <i class="fas fa-circle-play me-1"></i>Play
+                    </button>
+                    <button id="btnNext" class="btn btn-sm btn-outline-secondary" disabled>
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="text-light-muted" style="font-size:.7rem;white-space:nowrap;">Speed</label>
+                    <input type="range" id="playSpeed" class="form-range accent-range" min="200" max="2000" value="800" step="100">
+                </div>
+                <div id="stepCounter" class="text-center text-light-muted mt-1" style="font-size:.75rem;">—</div>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN AREA ===== -->
+        <main class="sim-main">
+
+            <!-- Error Banner -->
+            <div id="errorBanner" class="error-banner d-none">
+                <i class="fas fa-triangle-exclamation me-2"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state">
+                <i class="fas fa-memory fa-4x text-accent mb-3 opacity-50"></i>
+                <h5 class="text-white fw-bold">Configure &amp; Run a Simulation</h5>
+                <p class="text-light-muted">Enter a reference string, choose an algorithm, and click <strong>Run Simulation</strong>.</p>
+            </div>
+
+            <!-- ====== Simulation Content (hidden until run) ====== -->
+            <div id="simContent" class="d-none">
+
+                <!-- STATS ROW -->
+                <div class="row g-3 mb-4" id="statsRow"></div>
+
+                <!-- RAM VISUALIZATION + TABLE — side by side -->
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-4">
+                        <div class="panel h-100">
+                            <div class="panel-header">
+                                <i class="fas fa-memory me-2 text-accent"></i>Physical RAM
+                                <span id="algoLabel" class="ms-auto badge bg-dark-card text-accent border border-accent"></span>
+                            </div>
+                            <div id="ramVisualization" class="ram-display"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="panel h-100">
+                            <div class="panel-header">
+                                <i class="fas fa-table me-2 text-accent"></i>Step-by-Step Trace
+                                <span id="currentStepBadge" class="ms-auto text-light-muted small"></span>
+                            </div>
+                            <div class="table-scroll">
+                                <table class="table table-dark table-sm sim-table">
+                                    <thead id="traceHead"></thead>
+                                    <tbody id="traceBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALGORITHM INFO PANEL -->
+                <div class="row g-3 mb-4" id="algoInfoRow"></div>
+
+                <!-- COMPARISON SECTION (shown when ALL is selected) -->
+                <div id="comparisonSection" class="d-none mb-4">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <i class="fas fa-chart-bar me-2 text-accent"></i>Algorithm Comparison
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-lg-7">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Algorithm</th>
+                                                <th>Page Faults</th>
+                                                <th>Page Hits</th>
+                                                <th>Hit Ratio</th>
+                                                <th>Fault Ratio</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="compTable"></tbody>
+                                    </table>
+                                </div>
+                                <div id="bestAlgoNote" class="best-algo-note mt-3"></div>
+                            </div>
+                            <div class="col-lg-5">
+                                <canvas id="compChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INDIVIDUAL CHARTS -->
+                <div id="chartsSection" class="d-none mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="panel">
+                                <div class="panel-header"><i class="fas fa-chart-pie me-2 text-accent"></i>Hit / Fault Ratio</div>
+                                <canvas id="hitFaultChart" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="panel">
+                                <div class="panel-header"><i class="fas fa-chart-line me-2 text-accent"></i>Cumulative Faults Over Time</div>
+                                <canvas id="faultTimeChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MULTI-PROCESS SECTION -->
+                <div id="multiProcessSection" class="mb-4">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <i class="fas fa-layer-group me-2 text-accent"></i>Multi-Process Memory Simulation
+                            <button class="ms-auto btn btn-sm btn-outline-secondary" id="btnToggleMultiProc">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div id="multiProcBody">
+                            <p class="text-light-muted small mb-3">
+                                Simulate how multiple competing processes share the same limited memory frames.
+                                Each process generates page requests sequentially and competes with others.
+                            </p>
+                            <div class="row g-3 mb-3" id="processCards"></div>
+                            <div class="d-flex gap-2 mb-3">
+                                <button id="btnAddProc" class="btn btn-sm btn-outline-accent">
+                                    <i class="fas fa-plus me-1"></i>Add Process
+                                </button>
+                                <button id="btnRunMulti" class="btn btn-sm btn-accent">
+                                    <i class="fas fa-play me-1"></i>Run Multi-Process
+                                </button>
+                            </div>
+                            <div id="multiProcResult"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /simContent -->
+
+        </main>
+    </div><!-- /sim-container -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/static/js/simulator.js"></script>
+</body>
+</html>

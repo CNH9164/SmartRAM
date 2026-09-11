@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRAM — Virtual Memory & Page Replacement Simulator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- =============== NAVBAR =============== -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-nav">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-microchip me-2 text-accent"></i>SmartRAM
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto gap-2">
+                    <li class="nav-item"><a class="nav-link active" href="#hero">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#algorithms">Algorithms</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#real-world">Real World</a></li>
+                    <li class="nav-item">
+                        <a class="btn btn-accent btn-sm px-3" href="/simulator">
+                            <i class="fas fa-play me-1"></i> Start Simulator
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =============== HERO =============== -->
+    <section id="hero" class="hero-section">
+        <div class="hero-bg-particles"></div>
+        <div class="container position-relative z-1">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-7">
+                    <div class="badge bg-accent-soft text-accent mb-3 px-3 py-2 rounded-pill fw-semibold">
+                        <i class="fas fa-graduation-cap me-1"></i> Operating Systems Project
+                    </div>
+                    <h1 class="display-3 fw-bold text-white mb-3">
+                        Smart<span class="text-accent">RAM</span>
+                    </h1>
+                    <p class="lead text-light-muted mb-2 fs-4">
+                        Interactive Virtual Memory &amp; Page Replacement Management Simulator
+                    </p>
+                    <p class="text-light-muted mb-4 fs-6 lh-lg" style="max-width:560px;">
+                        Explore how an operating system juggles limited physical memory when
+                        applications compete for resources. Watch pages enter &amp; exit RAM in
+                        real time, compare FIFO, LRU and Optimal algorithms, and understand
+                        the decisions that keep your computer running smoothly.
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="/simulator" class="btn btn-accent btn-lg px-4 shadow-glow">
+                            <i class="fas fa-rocket me-2"></i>Launch Simulator
+                        </a>
+                        <a href="#about" class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-book-open me-2"></i>Learn More
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="hero-ram-visual">
+                        <div class="ram-chip">
+                            <div class="ram-chip-header"><i class="fas fa-memory me-2"></i>PHYSICAL RAM</div>
+                            <div class="ram-slot occupied"><span>Page 7</span><span class="badge-fault">FAULT</span></div>
+                            <div class="ram-slot occupied"><span>Page 0</span><span class="badge-hit">HIT</span></div>
+                            <div class="ram-slot occupied flash"><span>Page 3</span><span class="badge-replace">REPLACE</span></div>
+                            <div class="ram-slot empty"><span>—</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============== ABOUT =============== -->
+    <section id="about" class="py-5">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-white section-title">What Is Virtual Memory?</h2>
+                <p class="text-light-muted mx-auto" style="max-width:720px;">
+                    Virtual memory is an essential OS technique that creates an illusion of having
+                    more memory than physically available. It maps virtual addresses to physical
+                    locations and swaps pages between RAM and disk as needed.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-blue-soft text-info"><i class="fas fa-puzzle-piece"></i></div>
+                        <h5 class="fw-bold text-white">Paging</h5>
+                        <p class="text-light-muted small mb-0">
+                            Physical memory is divided into fixed-size blocks called <em>frames</em>.
+                            Virtual memory is divided into same-size blocks called <em>pages</em>.
+                            The OS maintains a page table that maps virtual pages to physical frames.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-red-soft text-danger"><i class="fas fa-bolt"></i></div>
+                        <h5 class="fw-bold text-white">Page Faults</h5>
+                        <p class="text-light-muted small mb-0">
+                            When a process accesses a page that isn't in physical memory, a
+                            <em>page fault</em> occurs. The OS must load the page from disk.
+                            If RAM is full, it must choose a victim page to evict first.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-green-soft text-success"><i class="fas fa-recycle"></i></div>
+                        <h5 class="fw-bold text-white">Page Replacement</h5>
+                        <p class="text-light-muted small mb-0">
+                            When all frames are occupied, the OS uses a <em>page replacement algorithm</em>
+                            to decide which existing page to evict. The goal: minimize faults
+                            and keep frequently-used pages in RAM.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- scenario callout -->
+            <div class="scenario-callout mt-5">
+                <div class="row align-items-center">
+                    <div class="col-lg-2 text-center mb-3 mb-lg-0">
+                        <i class="fas fa-lightbulb fa-3x text-warning"></i>
+                    </div>
+                    <div class="col-lg-10">
+                        <h5 class="fw-bold text-white mb-1">The Scenario</h5>
+                        <p class="text-light-muted mb-0">
+                            Imagine a computer running a <strong>web browser</strong>, <strong>video player</strong>,
+                            <strong>IDE</strong>, and a <strong>database</strong> simultaneously — all competing for
+                            limited RAM. When a new page must load and every frame is occupied,
+                            <em>which page gets evicted?</em> That decision is what SmartRAM lets you explore.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============== ALGORITHMS =============== -->
+    <section id="algorithms" class="py-5 bg-darker">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-white section-title">Page Replacement Algorithms</h2>
+                <p class="text-light-muted mx-auto" style="max-width:680px;">
+                    SmartRAM implements the three most important algorithms taught in Operating Systems courses.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <!-- FIFO -->
+                <div class="col-lg-4">
+                    <div class="algo-card h-100 border-blue">
+                        <div class="algo-badge badge-blue">FIFO</div>
+                        <h5 class="fw-bold text-white">First In, First Out</h5>
+                        <p class="text-light-muted small">
+                            Replace the page that has been in memory the <em>longest</em>.
+                            Simple to implement using a queue, but can suffer from Bélády's Anomaly.
+                        </p>
+                        <div class="algo-meta">
+                            <div><i class="fas fa-clock me-1 text-info"></i>Time: O(1)</div>
+                            <div><i class="fas fa-database me-1 text-info"></i>Space: O(n)</div>
+                        </div>
+                        <div class="mt-3">
+                            <span class="badge bg-success-soft text-success me-1">Easy to implement</span>
+                            <span class="badge bg-danger-soft text-danger">Bélády's Anomaly</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- LRU -->
+                <div class="col-lg-4">
+                    <div class="algo-card h-100 border-purple">
+                        <div class="algo-badge badge-purple">LRU</div>
+                        <h5 class="fw-bold text-white">Least Recently Used</h5>
+                        <p class="text-light-muted small">
+                            Replace the page that has not been accessed for the <em>longest period</em>.
+                            Tracks recently-used order — exploits temporal locality.
+                        </p>
+                        <div class="algo-meta">
+                            <div><i class="fas fa-clock me-1 text-purple"></i>Time: O(n)</div>
+                            <div><i class="fas fa-database me-1 text-purple"></i>Space: O(n)</div>
+                        </div>
+                        <div class="mt-3">
+                            <span class="badge bg-success-soft text-success me-1">Good performance</span>
+                            <span class="badge bg-warning-soft text-warning">Requires tracking</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Optimal -->
+                <div class="col-lg-4">
+                    <div class="algo-card h-100 border-green">
+                        <div class="algo-badge badge-green">OPT</div>
+                        <h5 class="fw-bold text-white">Optimal (Clairvoyant)</h5>
+                        <p class="text-light-muted small">
+                            Replace the page whose next use is <em>farthest in the future</em>.
+                            Provably optimal — fewest possible faults — but requires future knowledge.
+                        </p>
+                        <div class="algo-meta">
+                            <div><i class="fas fa-clock me-1 text-success"></i>Time: O(n·f)</div>
+                            <div><i class="fas fa-database me-1 text-success"></i>Space: O(n)</div>
+                        </div>
+                        <div class="mt-3">
+                            <span class="badge bg-success-soft text-success me-1">Fewest faults</span>
+                            <span class="badge bg-danger-soft text-danger">Not implementable</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============== REAL WORLD =============== -->
+    <section id="real-world" class="py-5">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold text-white section-title">Where Is Page Replacement Used?</h2>
+                <p class="text-light-muted mx-auto" style="max-width:680px;">
+                    The same memory-management problem appears everywhere —
+                    from kernel scheduling to browser caches.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-desktop fa-2x text-info mb-3"></i>
+                        <h6 class="fw-bold text-white">Operating Systems</h6>
+                        <p class="text-light-muted small mb-0">
+                            When physical RAM is insufficient, the OS manages pages between
+                            main memory and secondary storage (swap/pagefile).
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-globe fa-2x text-purple mb-3"></i>
+                        <h6 class="fw-bold text-white">Web Browsers</h6>
+                        <p class="text-light-muted small mb-0">
+                            Browsers manage large amounts of active and inactive tab data
+                            and need efficient cache eviction strategies.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-database fa-2x text-success mb-3"></i>
+                        <h6 class="fw-bold text-white">Database Systems</h6>
+                        <p class="text-light-muted small mb-0">
+                            Database buffer pools cache disk pages in memory and must
+                            replace pages efficiently to sustain query performance.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-cloud fa-2x text-warning mb-3"></i>
+                        <h6 class="fw-bold text-white">Cloud Computing</h6>
+                        <p class="text-light-muted small mb-0">
+                            Virtual machines and containers operate under memory constraints
+                            and require efficient page management across tenants.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-mobile-alt fa-2x text-danger mb-3"></i>
+                        <h6 class="fw-bold text-white">Mobile Devices</h6>
+                        <p class="text-light-muted small mb-0">
+                            Mobile OSes must manage limited RAM among multiple foreground
+                            and background applications, killing processes when necessary.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-4">
+                    <div class="use-card">
+                        <i class="fas fa-microchip fa-2x text-accent mb-3"></i>
+                        <h6 class="fw-bold text-white">Embedded Systems</h6>
+                        <p class="text-light-muted small mb-0">
+                            Devices with severely limited memory need aggressive and
+                            predictable memory utilization strategies.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============== CTA =============== -->
+    <section class="py-5 text-center">
+        <div class="container py-5">
+            <h2 class="fw-bold text-white mb-3">Ready to Explore?</h2>
+            <p class="text-light-muted mb-4 mx-auto" style="max-width:520px;">
+                Launch the simulator, enter a reference string, pick an algorithm,
+                and watch how an OS decides which pages stay in RAM.
+            </p>
+            <a href="/simulator" class="btn btn-accent btn-lg px-5 shadow-glow">
+                <i class="fas fa-rocket me-2"></i>Open Simulator
+            </a>
+        </div>
+    </section>
+
+    <!-- =============== FOOTER =============== -->
+    <footer class="py-4 border-top border-dark">
+        <div class="container text-center">
+            <p class="text-light-muted small mb-1">
+                <i class="fas fa-microchip me-1 text-accent"></i>
+                <strong>SmartRAM</strong> — Interactive Virtual Memory & Page Replacement Simulator
+            </p>
+            <p class="text-light-muted small mb-0">Operating Systems Academic Project</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
