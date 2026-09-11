@@ -2,7 +2,8 @@
 
 A modern full-stack web application designed for Operating Systems courses, demonstrating how an OS manages limited physical RAM when multiple applications request memory pages.
 
-![SmartRAM Dashboard Preview](https://via.placeholder.com/1200x600/0d1117/58a6ff?text=SmartRAM+Interactive+Simulator)
+🔗 **Live Demo:** [https://smartram.vercel.app](https://smartram.vercel.app)  
+📦 **GitHub Repository:** [https://github.com/CNH9164/SmartRAM](https://github.com/CNH9164/SmartRAM)
 
 ---
 
