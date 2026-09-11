@@ -20,8 +20,10 @@ def create_app():
 
     return app
 
+# Create app instance for Vercel
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
     print("=" * 60)
     print("  SmartRAM - Page Replacement Simulator Starting...")
     print("  Open http://127.0.0.1:5000 in your browser")
