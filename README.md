@@ -1,42 +1,50 @@
-# SmartRAM — Interactive Virtual Memory & Page Replacement Simulator
+# SmartRAM — Hospital Information System Memory Simulation
 
-A modern full-stack web application designed for Operating Systems courses, demonstrating how an OS manages limited physical RAM when multiple applications request memory pages.
+An interactive educational Operating Systems project and teaching tool demonstrating how clinical software workloads behave under physical memory constraints using interactive page replacement algorithms.
 
 🔗 **Live Demo:** [https://smartram.vercel.app](https://smartram.vercel.app)  
 📦 **GitHub Repository:** [https://github.com/CNH9164/SmartRAM](https://github.com/CNH9164/SmartRAM)
 
 ---
 
-## 🌟 Features
+## 🌟 Overview
 
-- **3 Core Page Replacement Algorithms**
-  - **FIFO** (First In First Out) — Simple queue-based replacement
-  - **LRU** (Least Recently Used) — Usage-order tracking for temporal locality
-  - **Optimal (Clairvoyant)** — Theoretical optimal algorithm with future knowledge
+SmartRAM bridges Operating Systems memory management theory with a real-life healthcare IT context. It visualizes how an OS manages limited physical memory frames when four core Hospital Information System (HIS) workflows generate page requests:
+
+1. **Patient Records Management** — High temporal locality as clinical staff examine patient profiles, registration records, and medical histories.
+2. **Appointment Management** — Cyclic lookups across daily doctor schedules, booking details, and patient notification queues.
+3. **Laboratory Information System** — Batch sample tracking across analyzer interfaces, pending test worklists, and diagnostic report validation.
+4. **Pharmacy Management** — High-frequency access to medicine inventory catalogs, prescription verification, and drug interaction checkers.
+
+> **Educational Notice:** Hospital workflows are modeled using synthetic page-reference sequences for academic simulation. No real patient health information (PHI) or hospital databases are used.
+
+---
+
+## 🧠 Core Features
+
+- **3 Page Replacement Algorithms**
+  - **FIFO** (First In, First Out) — Replaces the page resident in memory the longest; demonstrates potential Bélády's Anomaly.
+  - **LRU** (Least Recently Used) — Replaces the page unreferenced for the longest duration, exploiting temporal locality.
+  - **Optimal (Clairvoyant)** — Theoretical benchmark replacing the page unneeded for the longest future duration (minimum possible faults).
+
+- **Hospital Workload Presets & Custom Sequences**
+  - Instant selection of the 4 clinical workloads with predefined synthetic sequences and conceptual page mappings.
+  - Custom sequence input accepting comma-separated or space-separated page numbers.
+  - Configurable memory capacity (1 to 8 frames).
+
+- **Interactive Simulation Dashboard**
+  - **Summary Metrics Strip** — Total requests, Page Hits, Page Faults, Replacements, Hit Ratio (%), Fault Ratio (%).
+  - **Reference String Progress Track** — Visual clickable token strip showing processed hits/faults, active step, and upcoming requests.
+  - **Physical RAM Visualization** — Live frame status with clinical page labels, color-coded Hit (green), Fault (red), and Replaced victim (amber) badges.
+  - **Dynamic Plain-Language Explanations** — Step-by-step narration explaining exactly why a hit occurred or why an algorithm chose a specific victim page.
+  - **Step-by-Step Trace Table** — Complete history table showing frame state and evicted pages at every step.
+  - **Playback Controls** — First step, Previous step, Play/Pause with speed slider, Next step, Last step, and Reset.
 
 - **Algorithm Comparison Mode**
-  - Run all 3 algorithms simultaneously on the same reference string
-  - Side-by-side performance metrics (Page Faults, Hits, Hit/Fault Ratios)
-  - Interactive comparison bar charts
-  - Automatic best-algorithm detection
-
-- **Step-by-Step Interactive Playback**
-  - Previous / Next navigation
-  - Auto-play mode with adjustable speed
-  - Visual RAM slot updates (Page In, Hit, Eviction/Replacement)
-  - Full trace table highlighting current step
-
-- **Real-World Scenarios**
-  - **Web Browser** — Multi-tab switching with temporal locality
-  - **Video Streaming** — Sequential playback with seeking
-  - **Database Queries** — Hot index pages vs cold scan pages
-  - **Bélády's Anomaly Demo** — Demonstrating the FIFO frame anomaly
-
-- **Modern Responsive UI**
-  - Dark mode OS/Hardware aesthetic
-  - Glassmorphism navigation
-  - Chart.js visualizations (Doughnut ratios, cumulative fault line graphs)
-  - Tooltips, badges, and smooth animations
+  - Simultaneous evaluation of FIFO, LRU, and Optimal on the identical reference sequence and frame count.
+  - Best-performing algorithm detection with trophy badge.
+  - Chart.js comparison bar charts and doughnut distributions.
+  - Academic context note on workload sensitivity and theoretical benchmark limits.
 
 ---
 
@@ -44,9 +52,9 @@ A modern full-stack web application designed for Operating Systems courses, demo
 
 ```
 SmartRAM/
-│
 ├── app.py                     # Flask application entry point
-├── requirements.txt           # Python dependencies
+├── requirements.txt           # Dependencies (Flask, Flask-CORS)
+├── vercel.json                # Vercel deployment configuration
 │
 ├── algorithms/                # Pure algorithm implementations
 │   ├── __init__.py
@@ -56,22 +64,22 @@ SmartRAM/
 │
 ├── routes/                    # Flask route blueprints
 │   ├── __init__.py
-│   ├── main.py               # Home and simulator page routes
-│   └── simulation.py         # REST API endpoints
+│   ├── main.py               # Home (index.html) and simulator page routes
+│   └── simulation.py         # REST API endpoints (/api/simulate, /api/scenarios)
 │
 ├── services/                  # Business logic & validation
 │   ├── __init__.py
-│   └── simulator.py          # Orchestrates algorithm runs
+│   └── simulator.py          # Input validation and algorithm orchestration
 │
 ├── templates/                 # Jinja2 HTML templates
-│   ├── index.html            # Landing / educational page
-│   └── simulator.html        # Interactive simulation dashboard
+│   ├── index.html            # Landing / educational overview page
+│   └── simulator.html        # Interactive hospital simulation dashboard
 │
 └── static/                    # Frontend assets
     ├── css/
-    │   └── style.css         # Modern dark dashboard stylesheet
+    │   └── style.css         # Modern clinical OS theme stylesheet
     └── js/
-        └── simulator.js      # Interactive playback, API & charts
+        └── simulator.js      # Frontend visualization engine & Chart.js integration
 ```
 
 ---
@@ -83,114 +91,92 @@ SmartRAM/
 - Python 3.8+
 - pip
 
-### Installation
+### Installation & Execution
 
 1. **Clone the repository:**
    ```bash
-   cd D:\OS-PROJECT
+   git clone https://github.com/CNH9164/SmartRAM.git
+   cd SmartRAM
    ```
 
-2. **Create a virtual environment (optional but recommended):**
-   ```bash
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On Linux/macOS:
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Run the application:**
+3. **Run the Flask application:**
    ```bash
    python app.py
    ```
 
-5. **Open in browser:**
-   Navigate to [http://127.0.0.1:5000](http://127.0.0.1:5000)
+4. **Access the application:**
+   Open [http://127.0.0.1:5000](http://127.0.0.1:5000) or [http://127.0.0.1:5000/simulator](http://127.0.0.1:5000/simulator) in your web browser.
 
 ---
 
 ## 📡 REST API Documentation
 
-### Run Simulation
+### 1. Run Simulation
+- **Endpoint:** `POST /api/simulate`
+- **Request Body (Single Algorithm):**
+  ```json
+  {
+    "algorithm": "LRU",
+    "frames": 3,
+    "reference_string": "1, 2, 3, 1, 4, 2, 1, 5, 2, 1"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "algorithm": "LRU",
+    "frames": 3,
+    "total_references": 10,
+    "page_faults": 6,
+    "page_hits": 4,
+    "page_replacements": 3,
+    "hit_ratio": 40.0,
+    "fault_ratio": 60.0,
+    "steps": [
+      {
+        "step": 1,
+        "requested_page": 1,
+        "frames": [1],
+        "result": "FAULT",
+        "replaced_page": null
+      }
+    ]
+  }
+  ```
 
-**Endpoint:** `POST /api/simulate`
+- **Request Body (Compare All):**
+  ```json
+  {
+    "algorithm": "ALL",
+    "frames": 3,
+    "reference_string": "1, 2, 3, 1, 4, 2, 1, 5, 2, 1"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "comparison": true,
+    "best_algorithm": "OPTIMAL",
+    "best_page_faults": 5,
+    "results": [
+      { "algorithm": "FIFO", "page_faults": 7, "page_hits": 3, "page_replacements": 4, "hit_ratio": 30.0, "fault_ratio": 70.0, ... },
+      { "algorithm": "LRU", "page_faults": 6, "page_hits": 4, "page_replacements": 3, "hit_ratio": 40.0, "fault_ratio": 60.0, ... },
+      { "algorithm": "OPTIMAL", "page_faults": 5, "page_hits": 5, "page_replacements": 2, "hit_ratio": 50.0, "fault_ratio": 50.0, ... }
+    ]
+  }
+  ```
 
-**Request Body:**
-```json
-{
-  "algorithm": "LRU",
-  "frames": 3,
-  "reference_string": "7 0 1 2 0 3 0 4 2 3 0 3 2"
-}
-```
-
-*Note: `reference_string` can be a space-separated string or an array of integers.*
-
-**Response (Single Algorithm):**
-```json
-{
-  "algorithm": "LRU",
-  "frames": 3,
-  "total_references": 13,
-  "page_faults": 8,
-  "page_hits": 5,
-  "hit_ratio": 38.46,
-  "fault_ratio": 61.54,
-  "steps": [
-    {
-      "step": 1,
-      "requested_page": 7,
-      "frames": [7],
-      "result": "FAULT",
-      "replaced_page": null
-    },
-    ...
-  ]
-}
-```
-
-**Response (Compare All — `algorithm: "ALL"`):**
-```json
-{
-  "comparison": true,
-  "best_algorithm": "OPTIMAL",
-  "best_page_faults": 6,
-  "results": [
-    { "algorithm": "FIFO", "page_faults": 9, ... },
-    { "algorithm": "LRU", "page_faults": 8, ... },
-    { "algorithm": "OPTIMAL", "page_faults": 6, ... }
-  ]
-}
-```
-
----
-
-## 🧠 Educational Concepts Explained
-
-### 1. Bélády's Anomaly
-Normally, giving an algorithm more frames decreases the number of page faults. However, FIFO can suffer from **Bélády's Anomaly**, where increasing the frame allocation actually *increases* the page fault count! You can test this using the built-in scenario in the simulator.
-
-### 2. Temporal Locality
-Programs tend to access the same memory locations repeatedly within short periods. **LRU** exploits this by assuming recently accessed pages will likely be accessed again soon.
-
-### 3. Clairvoyant (Optimal) Algorithm
-The optimal page replacement algorithm requires future knowledge of all memory accesses. While impossible in real operating systems, it serves as the theoretical benchmark against which all practical algorithms are measured.
-
----
-
-## 🎓 Academic Viva/Presentation Notes
-
-- **Separation of Concerns:** Algorithms are completely decoupled from the web framework in `algorithms/` and can be tested standalone.
-- **Dynamic API:** No hardcoded simulation results — everything is computed dynamically in Python.
-- **Extensibility:** New algorithms (e.g., LFU, Clock, Second Chance) can be added simply by creating a new module in `algorithms/` and registering it in `services/simulator.py`.
+### 2. Get Hospital Workload Scenarios
+- **Endpoint:** `GET /api/scenarios`
+- **Response:** Array of 4 predefined hospital workload scenarios with descriptions and conceptual page mappings.
 
 ---
 
 ## 📄 License
 
-MIT License — free for educational and academic use.
+MIT License — free for academic and educational use.

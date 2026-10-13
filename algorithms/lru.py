@@ -60,6 +60,7 @@ def simulate(reference_string, num_frames):
             })
 
     total_references = len(reference_string)
+    page_replacements = sum(1 for step in steps if step['replaced_page'] is not None)
     hit_ratio = (page_hits / total_references) * 100 if total_references > 0 else 0
     fault_ratio = (page_faults / total_references) * 100 if total_references > 0 else 0
 
@@ -69,6 +70,7 @@ def simulate(reference_string, num_frames):
         'total_references': total_references,
         'page_faults': page_faults,
         'page_hits': page_hits,
+        'page_replacements': page_replacements,
         'hit_ratio': round(hit_ratio, 2),
         'fault_ratio': round(fault_ratio, 2),
         'steps': steps

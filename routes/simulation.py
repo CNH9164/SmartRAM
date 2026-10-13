@@ -1,8 +1,9 @@
 """
 Simulation Blueprint
-Handles simulation REST API endpoints
+Handles simulation REST API endpoints for Hospital Information System Memory Simulation
 """
 
+import re
 from flask import Blueprint, request, jsonify
 from services.simulator import run_simulation, validate_input
 
@@ -17,7 +18,7 @@ def simulate():
     {
         "algorithm": "LRU",
         "frames": 3,
-        "reference_string": [7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2]
+        "reference_string": "1, 2, 3, 1, 4, 2, 1, 5, 2, 1"
     }
     """
     try:
@@ -31,10 +32,11 @@ def simulate():
         if not is_valid:
             return jsonify({'error': error_msg}), 400
 
-        # Process reference string if it's a string
+        # Process reference string (handles lists, comma-separated, space-separated)
         ref_string = data['reference_string']
         if isinstance(ref_string, str):
-            ref_string = [int(x.strip()) for x in ref_string.split() if x.strip()]
+            tokens = [x.strip() for x in re.split(r'[\s,]+', ref_string.strip()) if x.strip()]
+            ref_string = [int(x) for x in tokens]
         else:
             ref_string = [int(x) for x in ref_string]
 
@@ -52,40 +54,76 @@ def simulate():
 @simulation_bp.route('/scenarios', methods=['GET'])
 def get_scenarios():
     """
-    Return predefined real-world scenarios
+    Return predefined Hospital Information System workload scenarios
     """
     scenarios = [
         {
-            'id': 'browser',
-            'name': 'Web Browser (Heavy Multi-tab)',
-            'description': 'Simulates browsing with multiple tabs open, switching between search, docs, video, and social media.',
-            'reference_string': '1 2 3 4 1 2 5 1 2 3 4 5',
-            'frames': 4,
-            'explanation': 'Demonstrates temporal locality where recently opened tabs are revisited frequently.'
+            'id': 'patient_records',
+            'name': 'Patient Records Management',
+            'icon': 'fa-hospital-user',
+            'badge': 'High Locality',
+            'description': 'Simulates repeated access to patient-profile, registration and medical-history page identifiers.',
+            'reference_string': '1, 2, 3, 1, 4, 2, 1, 5, 2, 1',
+            'frames': 3,
+            'explanation': 'Doctors and intake staff frequently revisit patient profile (Page 1) and registration records (Page 2) while updating diagnoses and billing.',
+            'page_mappings': {
+                '1': 'Patient Profile & Demographics',
+                '2': 'Registration & Check-In',
+                '3': 'Medical History & Diagnoses',
+                '4': 'Insurance & Billing Info',
+                '5': 'Clinical Examination Notes'
+            }
         },
         {
-            'id': 'video_player',
-            'name': 'Video Streaming App',
-            'description': 'Simulates sequential frame loading with occasional seeking back and forth.',
-            'reference_string': '1 2 3 4 5 6 7 8 2 3 4 9 10',
+            'id': 'appointments',
+            'name': 'Appointment Management',
+            'icon': 'fa-calendar-check',
+            'badge': 'Cyclic Lookup',
+            'description': 'Simulates access to appointment lists, scheduling pages and associated record pages.',
+            'reference_string': '1, 2, 3, 2, 4, 1, 2, 5, 3, 2',
             'frames': 3,
-            'explanation': 'Shows streaming behavior where pages are accessed sequentially with occasional jumps.'
+            'explanation': 'Receptionists repeatedly reference physician schedules (Page 2) while navigating master appointment queues and booking time slots.',
+            'page_mappings': {
+                '1': 'Appointment Master List',
+                '2': 'Physician Daily Schedule',
+                '3': 'Slot Booking & Rescheduling',
+                '4': 'Department Availability',
+                '5': 'Patient Notification & Reminders'
+            }
         },
         {
-            'id': 'database',
-            'name': 'Database Query Processing',
-            'description': 'Simulates index lookups and table scans with repeated access to index root pages.',
-            'reference_string': '0 1 0 2 0 3 0 4 0 5 1 2',
+            'id': 'laboratory',
+            'name': 'Laboratory Information System',
+            'icon': 'fa-vial-virus',
+            'badge': 'Batch Processing',
+            'description': 'Simulates access to test requests, pending-test pages and report-processing pages.',
+            'reference_string': '1, 2, 3, 4, 2, 1, 5, 3, 2, 4',
             'frames': 3,
-            'explanation': 'Shows hot pages (index roots) that are accessed repeatedly interspersed with cold data pages.'
+            'explanation': 'Lab technicians cycle between test order queues, pending sample worklists, and diagnostic report verification pipelines.',
+            'page_mappings': {
+                '1': 'Lab Test Request Queue',
+                '2': 'Pending Sample Worklist',
+                '3': 'Specimen Barcode Tracking',
+                '4': 'Analyzer Interface & Values',
+                '5': 'Diagnostic Report Validation'
+            }
         },
         {
-            'id': 'belady',
-            'name': "Belady's Anomaly Demo (FIFO Flaw)",
-            'description': 'Classic reference string that shows Belady\'s Anomaly where increasing frames from 3 to 4 increases page faults in FIFO!',
-            'reference_string': '1 2 3 4 1 2 5 1 2 3 4 5',
+            'id': 'pharmacy',
+            'name': 'Pharmacy Management',
+            'icon': 'fa-pills',
+            'badge': 'High Frequency',
+            'description': 'Simulates access to medicine-inventory, prescription-processing and billing page identifiers.',
+            'reference_string': '1, 2, 1, 3, 4, 2, 5, 1, 3, 2',
             'frames': 3,
-            'explanation': 'Run with FIFO: 3 frames gives 9 faults, but 4 frames gives 10 faults! An iconic OS concept.'
+            'explanation': 'Pharmacists query medicine inventory catalogs (Page 1) and prescription verification queues (Page 2) repeatedly during dispensing.',
+            'page_mappings': {
+                '1': 'Medicine Formulary & Stock',
+                '2': 'Prescription Verification',
+                '3': 'Drug Interaction Checker',
+                '4': 'Dispense Batch Queue',
+                '5': 'Pharmacy Billing & Claims'
+            }
         }
     ]
     return jsonify(scenarios), 200

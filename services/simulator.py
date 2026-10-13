@@ -3,6 +3,7 @@ Simulation Service
 Handles simulation logic and coordinates algorithm execution
 """
 
+import re
 from algorithms import fifo, lru, optimal
 
 def run_simulation(algorithm, frames, reference_string):
@@ -59,6 +60,9 @@ def validate_input(data):
         Tuple of (is_valid, error_message)
     """
     # Check required fields
+    if not isinstance(data, dict):
+        return False, "Request body must be a valid JSON object"
+
     if 'algorithm' not in data:
         return False, "Algorithm is required"
 
@@ -72,7 +76,7 @@ def validate_input(data):
     try:
         frames = int(data['frames'])
         if frames <= 0:
-            return False, "Number of frames must be positive"
+            return False, "Number of frames must be positive (at least 1)"
         if frames > 10:
             return False, "Number of frames cannot exceed 10"
     except (ValueError, TypeError):
@@ -82,14 +86,17 @@ def validate_input(data):
     reference_string = data['reference_string']
 
     if isinstance(reference_string, str):
-        # Parse string to list
+        # Parse string to list (handles comma-separated and space-separated values)
         try:
-            reference_string = [int(x.strip()) for x in reference_string.split() if x.strip()]
+            tokens = [t.strip() for t in re.split(r'[\s,]+', reference_string.strip()) if t.strip()]
+            if not tokens:
+                return False, "Reference string cannot be empty"
+            reference_string = [int(x) for x in tokens]
         except ValueError:
-            return False, "Reference string must contain only numbers"
+            return False, "Reference string must contain only numbers separated by commas or spaces"
 
     if not isinstance(reference_string, list):
-        return False, "Reference string must be a list or space-separated string"
+        return False, "Reference string must be a list or comma/space-separated string"
 
     if len(reference_string) == 0:
         return False, "Reference string cannot be empty"
@@ -110,7 +117,7 @@ def validate_input(data):
 
     # Validate algorithm
     valid_algorithms = ['FIFO', 'LRU', 'OPTIMAL', 'ALL']
-    if data['algorithm'].upper() not in valid_algorithms:
+    if str(data['algorithm']).upper() not in valid_algorithms:
         return False, f"Algorithm must be one of: {', '.join(valid_algorithms)}"
 
     return True, None
