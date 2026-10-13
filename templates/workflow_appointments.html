@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Management — SmartRAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="sim-body">
+
+    <nav class="navbar navbar-expand-lg navbar-dark glass-nav">
+        <div class="container-fluid px-3 px-lg-4">
+            <a class="navbar-brand" href="/">
+                <span class="brand-icon-wrap">
+                    <i class="fas fa-hospital-user"></i>
+                </span>
+                <span>Smart<span class="text-teal">RAM</span></span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-med-blue-soft text-med-blue border border-med-blue rounded-pill px-3 py-2 d-none d-sm-inline-flex align-items-center">
+                    <i class="fas fa-calendar-check me-2"></i>Appointment Management
+                </span>
+                <a href="/workflow-select" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Workflows
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="py-4" style="background: var(--bg-darker); border-bottom: 1px solid var(--border-dark-2);">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="fw-bold text-white mb-3">
+                        <i class="fas fa-calendar-check text-med-blue me-2"></i>Appointment Management
+                    </h2>
+
+                    <div class="mb-3">
+                        <h5 class="text-teal fw-bold mb-2">Introduction</h5>
+                        <p class="text-light-muted mb-0">
+                            Appointment Management represents the scheduling-related operations of a hospital information system. Conceptually, it includes appointment lists, doctor schedules, available time slots and booking-related records. SmartRAM models access to these categories through synthetic memory-page requests.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h5 class="text-teal fw-bold mb-2">How Operating System Concepts Are Applied</h5>
+                        <p class="text-light-muted mb-2">
+                            Appointment-related requests are represented by page identifiers and processed under a limited number of RAM frames. Repeated requests can result in page hits when the relevant pages remain in memory. Requests for pages that are not currently available result in page faults.
+                        </p>
+                        <p class="text-light-muted mb-0">
+                            FIFO, LRU and Optimal make different page replacement decisions and the resulting memory states and page-fault counts can be examined in the simulation.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h5 class="text-teal fw-bold mb-2">How Page Replacement Can Improve Efficiency</h5>
+                        <p class="text-light-muted mb-0">
+                            Keeping frequently or recently accessed scheduling-related pages in memory may reduce page faults for certain workloads. Comparing replacement algorithms helps users understand the relationship between memory capacity, request patterns and memory-related delays.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="sim-container">
+        <aside class="sim-sidebar">
+            <div class="sidebar-inner">
+                <div class="mb-3">
+                    <h5 class="fw-bold text-white mb-1" style="font-size: 1.05rem;">
+                        <i class="fas fa-sliders text-teal me-2"></i>Simulation Setup
+                    </h5>
+                    <p class="text-light-muted small mb-0" style="font-size: 0.76rem;">
+                        Enter your custom page sequence to simulate appointment scheduling access.
+                    </p>
+                </div>
+
+                <div class="mb-3">
+                    <label for="refString" class="sidebar-heading">
+                        Custom Page Sequence
+                        <span data-bs-toggle="tooltip" title="Enter page numbers separated by commas or spaces">
+                            <i class="fas fa-circle-question text-muted ms-1"></i>
+                        </span>
+                    </label>
+                    <textarea id="refString" class="form-control form-control-sm font-monospace" rows="3"
+                        placeholder="Enter your page sequence (e.g., 1, 2, 3, 2, 4, 1, 2, 5, 3, 2)"></textarea>
+                    <div id="refStringError" class="form-error"></div>
+                    <div class="text-dim mt-2" style="font-size: 0.72rem;">
+                        <i class="fas fa-info-circle me-1"></i>Enter page identifiers to represent access to appointment lists, doctor schedules, slot bookings and related information.
+                    </div>
+                </div>
+
+                <hr class="border-dark-2 my-3">
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="numFrames" class="sidebar-heading mb-0">Available Memory Frames</label>
+                        <span class="badge bg-teal-soft text-teal fw-bold fs-6" id="frameDisplay">3</span>
+                    </div>
+                    <input type="range" id="numFrames" class="form-range accent-range"
+                        min="1" max="8" value="3" oninput="updateFrameDisplay(this.value)">
+                    <div class="d-flex justify-content-between" style="font-size:0.68rem; color: var(--text-dim);">
+                        <span>1 Frame</span>
+                        <span>3 (Default)</span>
+                        <span>8 Frames</span>
+                    </div>
+                    <div class="text-dim mt-1" style="font-size: 0.68rem;">
+                        <i class="fas fa-microchip me-1"></i>Represents simulated physical memory capacity.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="sidebar-heading">Replacement Algorithm</label>
+                    <div class="algo-btns-grid">
+                        <button type="button" class="algo-btn algo-btn-active" data-algo="FIFO" onclick="selectAlgorithm('FIFO')">FIFO</button>
+                        <button type="button" class="algo-btn" data-algo="LRU" onclick="selectAlgorithm('LRU')">LRU</button>
+                        <button type="button" class="algo-btn" data-algo="OPTIMAL" onclick="selectAlgorithm('OPTIMAL')">Optimal</button>
+                    </div>
+                    <button type="button" class="algo-btn-compare" id="btnCompareMode" onclick="selectAlgorithm('ALL')">
+                        <i class="fas fa-chart-column me-1"></i> Compare All Algorithms
+                    </button>
+                    <div class="mt-2 p-2 rounded bg-dark-card-2 border border-dark-2" id="algoExplanationBrief">
+                        <div class="d-flex align-items-center text-teal small fw-bold mb-1">
+                            <i class="fas fa-circle-info me-1"></i> <span id="algoNameBrief">FIFO (First In, First Out)</span>
+                        </div>
+                        <p class="text-light-muted mb-0" id="algoDescBrief" style="font-size: 0.72rem;">
+                            Replaces the page that entered memory earliest.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                    <button id="btnRun" class="btn btn-accent fw-bold" onclick="runSimulation()">
+                        <i class="fas fa-play me-2"></i>Run Simulation
+                    </button>
+                    <button id="btnReset" class="btn btn-outline-secondary btn-sm" onclick="resetSimulation()">
+                        <i class="fas fa-rotate-left me-1"></i>Reset Simulation
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="sim-main">
+            <div id="errorBanner" class="error-banner d-none">
+                <i class="fas fa-triangle-exclamation text-danger fs-5"></i>
+                <div class="flex-grow-1" id="errorText">An error occurred</div>
+                <button type="button" class="btn-close btn-close-white" onclick="hideError()"></button>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-calendar-check"></i></div>
+                <h4 class="text-white fw-bold mb-2">Appointment Management Memory Simulation</h4>
+                <p class="text-light-muted mb-4" style="max-width: 580px;">
+                    Enter a custom page sequence representing access to appointment lists, doctor schedules and booking records, then click <strong>Run Simulation</strong> to observe page replacement behavior.
+                </p>
+            </div>
+
+            <div id="simContent" class="d-none">
+                <div class="row g-3 mb-3" id="statsRow"></div>
+                <div class="reference-track-wrap" id="referenceTrackWrap">
+                    <div class="reference-track-header">
+                        <div><i class="fas fa-shoe-prints text-teal me-2"></i><span>Page Sequence Timeline</span>
+                            <span class="ms-2 badge bg-dark-card text-muted border border-dark-2" id="timelineScenarioLabel">Appointments</span>
+                        </div>
+                        <div class="text-teal fw-bold" id="stepCounterBadge">Step 1 of 10</div>
+                    </div>
+                    <div class="reference-tokens-container" id="referenceTokensStrip"></div>
+                </div>
+                <div class="playback-bar" id="playbackBar">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-light-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                            <i class="fas fa-sliders text-teal me-1"></i> Playback:
+                        </span>
+                        <div class="playback-btns">
+                            <button type="button" class="btn-playback" id="btnFirst" onclick="navigateStepTo(0)"><i class="fas fa-backward-step"></i></button>
+                            <button type="button" class="btn-playback" id="btnPrev" onclick="navigateStep(-1)"><i class="fas fa-chevron-left"></i></button>
+                            <button type="button" class="btn-playback btn-play-pause" id="btnAutoPlay" onclick="toggleAutoPlay()">
+                                <i class="fas fa-play" id="playIcon"></i> <span id="playText">Play</span>
+                            </button>
+                            <button type="button" class="btn-playback" id="btnNext" onclick="navigateStep(1)"><i class="fas fa-chevron-right"></i></button>
+                            <button type="button" class="btn-playback" id="btnLast" onclick="navigateStepToLast()"><i class="fas fa-forward-step"></i></button>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-light-muted small" style="font-size: 0.72rem;">Animation Speed:</span>
+                            <input type="range" id="playSpeed" class="form-range accent-range" style="width: 110px;" min="200" max="2000" value="900" step="100">
+                        </div>
+                        <span class="badge bg-dark-card text-teal border border-dark-2 px-2 py-1" id="currentStepIndicator">Step 1 / 10</span>
+                    </div>
+                </div>
+                <div class="step-explanation-card" id="stepExplanationCard">
+                    <div class="step-explanation-title"><i class="fas fa-stethoscope"></i> <span id="stepExplanationHeader">Step 1</span></div>
+                    <p class="step-explanation-text" id="stepExplanationBody">Loading...</p>
+                </div>
+                <div class="row g-3 mb-3" id="ramAndTraceRow">
+                    <div class="col-lg-4 col-md-5">
+                        <div class="panel h-100">
+                            <div class="panel-header">
+                                <div><i class="fas fa-memory text-teal me-2"></i>Physical RAM Slots</div>
+                                <span id="algoLabelBadge" class="badge bg-dark-card text-teal border border-teal">FIFO</span>
+                            </div>
+                            <div class="ram-display-grid" id="ramFramesContainer"></div>
+                            <div class="ram-legend">
+                                <div class="legend-item"><span class="legend-dot dot-hit"></span><span>Hit</span></div>
+                                <div class="legend-item"><span class="legend-dot dot-fault"></span><span>Fault</span></div>
+                                <div class="legend-item"><span class="legend-dot dot-replace"></span><span>Replaced</span></div>
+                                <div class="legend-item"><span class="legend-dot dot-empty"></span><span>Empty</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8 col-md-7">
+                        <div class="panel h-100">
+                            <div class="panel-header">
+                                <div><i class="fas fa-table-list text-teal me-2"></i>Step-by-Step Memory Trace</div>
+                                <span class="text-muted small" style="font-size: 0.72rem;"><i class="fas fa-hand-pointer me-1"></i>Click any row</span>
+                            </div>
+                            <div class="table-scroll">
+                                <table class="table table-dark table-sm sim-table">
+                                    <thead id="traceTableHead"></thead>
+                                    <tbody id="traceTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="comparisonSection" class="d-none mb-4">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div><i class="fas fa-chart-column text-teal me-2"></i>Algorithm Performance Comparison</div>
+                            <span class="badge bg-warning-soft text-warning border border-warning">Benchmark</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-lg-7">
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr class="text-muted text-uppercase" style="font-size: 0.7rem;">
+                                                    <th>Algorithm</th><th class="text-center">Faults</th><th class="text-center">Hits</th>
+                                                    <th class="text-center">Replacements</th><th class="text-center">Hit Ratio</th><th class="text-center">Fault Ratio</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="comparisonTableBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div id="bestAlgorithmCallout" class="best-algo-callout"></div>
+                                    <div class="academic-note-box">
+                                        <i class="fas fa-graduation-cap me-1"></i>
+                                        <strong>OS Benchmark Context:</strong> Optimal provides the theoretical upper bound. Practical systems use LRU approximations.
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <h6 class="text-light-muted small fw-bold text-center mb-2">Faults vs Hits</h6>
+                                    <div style="position: relative; height: 240px;"><canvas id="compBarChart"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="individualChartsSection" class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="panel h-100">
+                                <div class="panel-header"><div><i class="fas fa-chart-pie text-teal me-2"></i>Hit vs Fault Ratio</div></div>
+                                <div class="panel-body d-flex justify-content-center align-items-center" style="min-height: 220px;">
+                                    <div style="width: 100%; max-width: 280px; height: 200px;"><canvas id="hitFaultDoughnutChart"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="panel h-100">
+                                <div class="panel-header"><div><i class="fas fa-chart-line text-teal me-2"></i>Cumulative Faults</div></div>
+                                <div class="panel-body" style="height: 220px;"><canvas id="cumulativeFaultLineChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/static/js/simulator.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            activeScenario = null;
+            hospitalScenarios = [];
+        });
+    </script>
+</body>
+</html>

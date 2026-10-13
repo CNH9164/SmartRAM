@@ -3,31 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartRAM — Virtual Memory & Page Replacement Simulator</title>
+    <title>SmartRAM — Hospital Information System Memory Simulation</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <!-- Custom Stylesheet -->
     <link href="/static/css/style.css" rel="stylesheet">
 </head>
 <body>
 
-    <!-- =============== NAVBAR =============== -->
+    <!-- =============== TOP NAVBAR =============== -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-nav">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-microchip me-2 text-accent"></i>SmartRAM
+                <span class="brand-icon-wrap">
+                    <i class="fas fa-hospital-user"></i>
+                </span>
+                Smart<span class="text-teal">RAM</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto gap-2">
+                <ul class="navbar-nav ms-auto gap-2 align-items-center">
                     <li class="nav-item"><a class="nav-link active" href="#hero">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#workloads">Hospital Workloads</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">OS Concepts</a></li>
                     <li class="nav-item"><a class="nav-link" href="#algorithms">Algorithms</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#real-world">Real World</a></li>
-                    <li class="nav-item">
+                    <li class="nav-item ms-lg-2">
                         <a class="btn btn-accent btn-sm px-3" href="/simulator">
-                            <i class="fas fa-play me-1"></i> Start Simulator
+                            <i class="fas fa-play me-1"></i> Launch Simulator
                         </a>
                     </li>
                 </ul>
@@ -35,44 +41,68 @@
         </div>
     </nav>
 
-    <!-- =============== HERO =============== -->
-    <section id="hero" class="hero-section">
-        <div class="hero-bg-particles"></div>
-        <div class="container position-relative z-1">
-            <div class="row align-items-center min-vh-100">
+    <!-- =============== HERO SECTION =============== -->
+    <section id="hero" class="hero-section min-vh-100 d-flex align-items-center">
+        <div class="container position-relative z-1 py-5">
+            <div class="row align-items-center g-5">
                 <div class="col-lg-7">
-                    <div class="badge bg-accent-soft text-accent mb-3 px-3 py-2 rounded-pill fw-semibold">
-                        <i class="fas fa-graduation-cap me-1"></i> Operating Systems Project
-                    </div>
-                    <h1 class="display-3 fw-bold text-white mb-3">
-                        Smart<span class="text-accent">RAM</span>
+                    <h1 class="display-4 fw-bold text-white mb-2">
+                        Smart<span class="text-teal">RAM</span>
                     </h1>
-                    <p class="lead text-light-muted mb-2 fs-4">
-                        Interactive Virtual Memory &amp; Page Replacement Management Simulator
+                    <h2 class="h4 text-teal fw-semibold mb-3">
+                        Hospital Information System Memory Simulation
+                    </h2>
+                    <p class="text-light-muted mb-3 fs-6 lh-lg" style="max-width:650px;">
+                        SmartRAM is an interactive memory-management simulation that demonstrates how Operating System concepts can be applied to hospital information system workflows. Hospital software may need to access patient records, appointment schedules, laboratory information and pharmacy inventory repeatedly. These activities can be represented as memory-page requests handled under limited RAM capacity.
                     </p>
-                    <p class="text-light-muted mb-4 fs-6 lh-lg" style="max-width:560px;">
-                        Explore how an operating system juggles limited physical memory when
-                        applications compete for resources. Watch pages enter &amp; exit RAM in
-                        real time, compare FIFO, LRU and Optimal algorithms, and understand
-                        the decisions that keep your computer running smoothly.
+                    <p class="text-light-muted mb-3 fs-6 lh-lg" style="max-width:650px;">
+                        SmartRAM allows users to simulate these requests and observe how FIFO, LRU and Optimal page replacement algorithms decide which pages remain in memory and which pages are replaced. By examining page hits, page faults and memory utilization, users can understand how memory-management strategies influence application performance.
+                    </p>
+                    <p class="text-secondary mb-4 fs-6" style="max-width:650px;">
+                        <em>This is a simulation of operating system memory behavior, not a functioning hospital information system.</em>
                     </p>
                     <div class="d-flex gap-3 flex-wrap">
-                        <a href="/simulator" class="btn btn-accent btn-lg px-4 shadow-glow">
+                        <a href="/workflow-select" class="btn btn-accent btn-lg px-4 shadow-glow">
                             <i class="fas fa-rocket me-2"></i>Launch Simulator
                         </a>
-                        <a href="#about" class="btn btn-outline-light btn-lg px-4">
-                            <i class="fas fa-book-open me-2"></i>Learn More
+                        <a href="#workloads" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-sitemap me-2"></i>Explore Workloads
                         </a>
                     </div>
                 </div>
+
                 <div class="col-lg-5 d-none d-lg-block">
-                    <div class="hero-ram-visual">
-                        <div class="ram-chip">
-                            <div class="ram-chip-header"><i class="fas fa-memory me-2"></i>PHYSICAL RAM</div>
-                            <div class="ram-slot occupied"><span>Page 7</span><span class="badge-fault">FAULT</span></div>
-                            <div class="ram-slot occupied"><span>Page 0</span><span class="badge-hit">HIT</span></div>
-                            <div class="ram-slot occupied flash"><span>Page 3</span><span class="badge-replace">REPLACE</span></div>
-                            <div class="ram-slot empty"><span>—</span></div>
+                    <div class="his-chip">
+                        <div class="his-chip-header">
+                            <span><i class="fas fa-memory text-teal me-2"></i>Simulated RAM Slots</span>
+                            <span class="badge bg-teal-soft text-teal">3 Frames</span>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="ram-frame-card frame-hit">
+                                <div>
+                                    <div class="ram-frame-number">Frame 1</div>
+                                    <div class="small text-secondary">Patient Profile & Demographics</div>
+                                </div>
+                                <span class="frame-badge badge-hit"><i class="fas fa-check"></i> HIT</span>
+                            </div>
+                            <div class="ram-frame-card frame-fault">
+                                <div>
+                                    <div class="ram-frame-number">Frame 2</div>
+                                    <div class="small text-secondary">Physician Daily Schedule</div>
+                                </div>
+                                <span class="frame-badge badge-fault"><i class="fas fa-download"></i> LOAD</span>
+                            </div>
+                            <div class="ram-frame-card frame-replace">
+                                <div>
+                                    <div class="ram-frame-number">Frame 3</div>
+                                    <div class="small text-secondary">Medicine Formulary & Stock</div>
+                                </div>
+                                <span class="frame-badge badge-replace"><i class="fas fa-arrows-rotate"></i> REPLACED</span>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-dark-2 small text-muted">
+                            <span><i class="fas fa-circle text-teal me-1" style="font-size: 0.5rem;"></i>FIFO / LRU / Optimal</span>
+                            <span class="text-teal font-monospace">Hit Ratio: 60.0%</span>
                         </div>
                     </div>
                 </div>
@@ -80,67 +110,162 @@
         </div>
     </section>
 
-    <!-- =============== ABOUT =============== -->
-    <section id="about" class="py-5">
+    <!-- =============== HOSPITAL WORKLOADS =============== -->
+    <section id="workloads" class="py-5 bg-darker">
         <div class="container py-5">
             <div class="text-center mb-5">
-                <h2 class="fw-bold text-white section-title">What Is Virtual Memory?</h2>
-                <p class="text-light-muted mx-auto" style="max-width:720px;">
-                    Virtual memory is an essential OS technique that creates an illusion of having
-                    more memory than physically available. It maps virtual addresses to physical
-                    locations and swaps pages between RAM and disk as needed.
+                <div class="badge bg-teal-soft text-teal px-3 py-1 rounded-pill mb-2">Hospital Information System Modules</div>
+                <h2 class="fw-bold text-white section-title">Hospital Workflow Simulations</h2>
+                <p class="text-light-muted mx-auto" style="max-width:700px;">
+                    Hospital software comprises multiple subsystems that access different types of information. SmartRAM represents each workflow as a series of memory-page requests processed under limited RAM capacity. Explore how page replacement algorithms handle each workload.
                 </p>
             </div>
 
             <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="info-card h-100">
-                        <div class="info-card-icon bg-blue-soft text-info"><i class="fas fa-puzzle-piece"></i></div>
-                        <h5 class="fw-bold text-white">Paging</h5>
-                        <p class="text-light-muted small mb-0">
-                            Physical memory is divided into fixed-size blocks called <em>frames</em>.
-                            Virtual memory is divided into same-size blocks called <em>pages</em>.
-                            The OS maintains a page table that maps virtual pages to physical frames.
+                <!-- 1. Patient Records Management -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="his-workload-card d-flex flex-column h-100">
+                        <div class="workload-icon-box bg-teal-soft text-teal">
+                            <i class="fas fa-hospital-user"></i>
+                        </div>
+                        <h5 class="fw-bold text-white mb-2">Patient Records Management</h5>
+                        <p class="text-light-muted small mb-2">
+                            Patient records management involves accessing information such as patient registration details, demographic profiles, medical-history records and previous visit information.
                         </p>
+                        <p class="text-light-muted small mb-2">
+                            SmartRAM represents repeated requests for different patient-related information as synthetic memory-page references. When a requested page is already in a simulated RAM frame, the request produces a page hit. When it is absent, the request produces a page fault.
+                        </p>
+                        <p class="text-light-muted small mb-3">
+                            FIFO, LRU and Optimal may retain different pages in memory, producing different page-fault counts for the same request sequence. Users can explore these differences in the simulation.
+                        </p>
+                        <div class="mt-auto">
+                            <a href="/workflow/patient_records" class="btn btn-accent btn-sm px-3">
+                                <i class="fas fa-play me-1"></i>Explore Simulation
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="info-card h-100">
-                        <div class="info-card-icon bg-red-soft text-danger"><i class="fas fa-bolt"></i></div>
-                        <h5 class="fw-bold text-white">Page Faults</h5>
-                        <p class="text-light-muted small mb-0">
-                            When a process accesses a page that isn't in physical memory, a
-                            <em>page fault</em> occurs. The OS must load the page from disk.
-                            If RAM is full, it must choose a victim page to evict first.
+
+                <!-- 2. Appointment Management -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="his-workload-card d-flex flex-column h-100">
+                        <div class="workload-icon-box bg-med-blue-soft text-med-blue">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h5 class="fw-bold text-white mb-2">Appointment Management</h5>
+                        <p class="text-light-muted small mb-2">
+                            Appointment management involves information such as appointment lists, doctor schedules, available time slots and booking-related records.
                         </p>
+                        <p class="text-light-muted small mb-2">
+                            SmartRAM simulates requests for scheduling-related pages and demonstrates what happens when the same pages are revisited or new pages are requested under limited memory frames.
+                        </p>
+                        <p class="text-light-muted small mb-3">
+                            Page hits and page faults illustrate the potential memory-access benefits and costs of keeping frequently or recently accessed pages in memory.
+                        </p>
+                        <div class="mt-auto">
+                            <a href="/workflow/appointments" class="btn btn-accent btn-sm px-3">
+                                <i class="fas fa-play me-1"></i>Explore Simulation
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="info-card h-100">
-                        <div class="info-card-icon bg-green-soft text-success"><i class="fas fa-recycle"></i></div>
-                        <h5 class="fw-bold text-white">Page Replacement</h5>
-                        <p class="text-light-muted small mb-0">
-                            When all frames are occupied, the OS uses a <em>page replacement algorithm</em>
-                            to decide which existing page to evict. The goal: minimize faults
-                            and keep frequently-used pages in RAM.
+
+                <!-- 3. Laboratory Information System -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="his-workload-card d-flex flex-column h-100">
+                        <div class="workload-icon-box bg-purple-soft text-purple">
+                            <i class="fas fa-vial-virus"></i>
+                        </div>
+                        <h5 class="fw-bold text-white mb-2">Laboratory Information System</h5>
+                        <p class="text-light-muted small mb-2">
+                            Laboratory information systems organize information such as test requests, pending-test lists, test-processing records and report-related information.
                         </p>
+                        <p class="text-light-muted small mb-2">
+                            SmartRAM represents requests for these different categories as synthetic memory-page references. Replacement algorithms affect whether previously requested pages remain available in simulated memory.
+                        </p>
+                        <p class="text-light-muted small mb-3">
+                            Users can compare how FIFO, LRU and Optimal produce different memory states and page-fault counts for the same workload, helping illustrate OS memory-management concepts.
+                        </p>
+                        <div class="mt-auto">
+                            <a href="/workflow/laboratory" class="btn btn-accent btn-sm px-3">
+                                <i class="fas fa-play me-1"></i>Explore Simulation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Pharmacy Management -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="his-workload-card d-flex flex-column h-100">
+                        <div class="workload-icon-box bg-warning-soft text-warning">
+                            <i class="fas fa-pills"></i>
+                        </div>
+                        <h5 class="fw-bold text-white mb-2">Pharmacy Management</h5>
+                        <p class="text-light-muted small mb-2">
+                            Pharmacy management involves conceptual information such as medicine inventory, stock records, prescription-processing records and billing-related information.
+                        </p>
+                        <p class="text-light-muted small mb-2">
+                            SmartRAM models requests for these categories using synthetic page references and demonstrates how memory-frame capacity and page replacement strategies influence page hits and page faults.
+                        </p>
+                        <p class="text-light-muted small mb-3">
+                            By comparing algorithm outcomes, users can understand how different replacement policies affect memory utilization for a given workload.
+                        </p>
+                        <div class="mt-auto">
+                            <a href="/workflow/pharmacy" class="btn btn-accent btn-sm px-3">
+                                <i class="fas fa-play me-1"></i>Explore Simulation
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- scenario callout -->
-            <div class="scenario-callout mt-5">
-                <div class="row align-items-center">
-                    <div class="col-lg-2 text-center mb-3 mb-lg-0">
-                        <i class="fas fa-lightbulb fa-3x text-warning"></i>
+    <!-- =============== OS CONCEPTS SECTION =============== -->
+    <section id="about" class="py-5">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <div class="badge bg-teal-soft text-teal px-3 py-1 rounded-pill mb-2">Operating Systems Theory</div>
+                <h2 class="fw-bold text-white section-title">How Operating Systems Help Hospital Workflows Run Efficiently</h2>
+                <p class="text-light-muted mx-auto" style="max-width:760px;">
+                    The operating system manages limited RAM available to applications and determines which memory pages can remain in physical memory. Understanding memory-management concepts helps explain how page replacement algorithms affect application performance.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-teal-soft text-teal"><i class="fas fa-memory"></i></div>
+                        <h5 class="fw-bold text-white">Memory Management</h5>
+                        <p class="text-light-muted small mb-0">
+                            The operating system manages the limited RAM available to applications and determines which memory pages can remain in physical memory. When a requested page is already in memory, the application can access the required information without incurring a page fault.
+                        </p>
                     </div>
-                    <div class="col-lg-10">
-                        <h5 class="fw-bold text-white mb-1">The Scenario</h5>
-                        <p class="text-light-muted mb-0">
-                            Imagine a computer running a <strong>web browser</strong>, <strong>video player</strong>,
-                            <strong>IDE</strong>, and a <strong>database</strong> simultaneously — all competing for
-                            limited RAM. When a new page must load and every frame is occupied,
-                            <em>which page gets evicted?</em> That decision is what SmartRAM lets you explore.
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-danger-soft text-danger"><i class="fas fa-bolt"></i></div>
+                        <h5 class="fw-bold text-white">Page Hits and Page Faults</h5>
+                        <p class="text-light-muted small mb-0">
+                            When a requested page is already in memory, the request results in a <strong>page hit</strong>. When the requested page is not in memory, the request results in a <strong>page fault</strong>, which can introduce additional delay as the operating system arranges for the page to be brought into memory.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-warning-soft text-warning"><i class="fas fa-arrows-rotate"></i></div>
+                        <h5 class="fw-bold text-white">Page Replacement</h5>
+                        <p class="text-light-muted small mb-0">
+                            When memory frames are full, a page replacement algorithm selects a page to remove so that another requested page can be loaded. FIFO, LRU and Optimal make replacement decisions differently, resulting in different page-fault counts for the same workload.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card h-100">
+                        <div class="info-card-icon bg-med-blue-soft text-med-blue"><i class="fas fa-chart-line"></i></div>
+                        <h5 class="fw-bold text-white">Performance Analysis</h5>
+                        <p class="text-light-muted small mb-0">
+                            Comparing these algorithms helps explain how memory-access patterns and available memory capacity affect page faults and memory-management behavior. Reducing page faults can reduce memory-related delays, depending on the workload and system conditions.
                         </p>
                     </div>
                 </div>
@@ -148,13 +273,14 @@
         </div>
     </section>
 
-    <!-- =============== ALGORITHMS =============== -->
+    <!-- =============== ALGORITHMS SECTION =============== -->
     <section id="algorithms" class="py-5 bg-darker">
         <div class="container py-5">
             <div class="text-center mb-5">
-                <h2 class="fw-bold text-white section-title">Page Replacement Algorithms</h2>
+                <div class="badge bg-teal-soft text-teal px-3 py-1 rounded-pill mb-2">Algorithm Benchmark</div>
+                <h2 class="fw-bold text-white section-title">Page Replacement Algorithms Evaluated</h2>
                 <p class="text-light-muted mx-auto" style="max-width:680px;">
-                    SmartRAM implements the three most important algorithms taught in Operating Systems courses.
+                    SmartRAM implements the three standard OS page replacement algorithms for comprehensive academic comparison.
                 </p>
             </div>
 
@@ -165,54 +291,53 @@
                         <div class="algo-badge badge-blue">FIFO</div>
                         <h5 class="fw-bold text-white">First In, First Out</h5>
                         <p class="text-light-muted small">
-                            Replace the page that has been in memory the <em>longest</em>.
-                            Simple to implement using a queue, but can suffer from Bélády's Anomaly.
+                            Replaces the page that entered physical memory earliest. Uses a FIFO queue structure. Low computational overhead, but can experience <strong>Bélády's Anomaly</strong>.
                         </p>
                         <div class="algo-meta">
-                            <div><i class="fas fa-clock me-1 text-info"></i>Time: O(1)</div>
-                            <div><i class="fas fa-database me-1 text-info"></i>Space: O(n)</div>
+                            <div><i class="fas fa-clock me-1 text-teal"></i>Complexity: O(1)</div>
+                            <div><i class="fas fa-microchip me-1 text-teal"></i>Space: O(n)</div>
                         </div>
                         <div class="mt-3">
-                            <span class="badge bg-success-soft text-success me-1">Easy to implement</span>
+                            <span class="badge bg-success-soft text-success me-1">Zero tracking overhead</span>
                             <span class="badge bg-danger-soft text-danger">Bélády's Anomaly</span>
                         </div>
                     </div>
                 </div>
+
                 <!-- LRU -->
                 <div class="col-lg-4">
                     <div class="algo-card h-100 border-purple">
                         <div class="algo-badge badge-purple">LRU</div>
                         <h5 class="fw-bold text-white">Least Recently Used</h5>
                         <p class="text-light-muted small">
-                            Replace the page that has not been accessed for the <em>longest period</em>.
-                            Tracks recently-used order — exploits temporal locality.
+                            Replaces the page that has not been referenced for the longest duration. Closely models temporal locality common in interactive hospital user workflows.
                         </p>
                         <div class="algo-meta">
-                            <div><i class="fas fa-clock me-1 text-purple"></i>Time: O(n)</div>
-                            <div><i class="fas fa-database me-1 text-purple"></i>Space: O(n)</div>
+                            <div><i class="fas fa-clock me-1 text-purple"></i>Complexity: O(n)</div>
+                            <div><i class="fas fa-microchip me-1 text-purple"></i>Space: O(n)</div>
                         </div>
                         <div class="mt-3">
-                            <span class="badge bg-success-soft text-success me-1">Good performance</span>
-                            <span class="badge bg-warning-soft text-warning">Requires tracking</span>
+                            <span class="badge bg-success-soft text-success me-1">High Hit Efficiency</span>
+                            <span class="badge bg-warning-soft text-warning">Stack Algorithm</span>
                         </div>
                     </div>
                 </div>
+
                 <!-- Optimal -->
                 <div class="col-lg-4">
                     <div class="algo-card h-100 border-green">
-                        <div class="algo-badge badge-green">OPT</div>
-                        <h5 class="fw-bold text-white">Optimal (Clairvoyant)</h5>
+                        <div class="algo-badge badge-green">OPTIMAL</div>
+                        <h5 class="fw-bold text-white">Clairvoyant Benchmark</h5>
                         <p class="text-light-muted small">
-                            Replace the page whose next use is <em>farthest in the future</em>.
-                            Provably optimal — fewest possible faults — but requires future knowledge.
+                            Replaces the page whose next use occurs farthest in the future. Provably optimal (lowest fault count), serving as the theoretical benchmark against all algorithms.
                         </p>
                         <div class="algo-meta">
-                            <div><i class="fas fa-clock me-1 text-success"></i>Time: O(n·f)</div>
-                            <div><i class="fas fa-database me-1 text-success"></i>Space: O(n)</div>
+                            <div><i class="fas fa-clock me-1 text-success"></i>Complexity: O(n·f)</div>
+                            <div><i class="fas fa-microchip me-1 text-success"></i>Space: O(n)</div>
                         </div>
                         <div class="mt-3">
-                            <span class="badge bg-success-soft text-success me-1">Fewest faults</span>
-                            <span class="badge bg-danger-soft text-danger">Not implementable</span>
+                            <span class="badge bg-success-soft text-success me-1">Minimum Faults</span>
+                            <span class="badge bg-danger-soft text-danger">Theoretical Only</span>
                         </div>
                     </div>
                 </div>
@@ -220,107 +345,35 @@
         </div>
     </section>
 
-    <!-- =============== REAL WORLD =============== -->
-    <section id="real-world" class="py-5">
-        <div class="container py-5">
-            <div class="text-center mb-5">
-                <h2 class="fw-bold text-white section-title">Where Is Page Replacement Used?</h2>
-                <p class="text-light-muted mx-auto" style="max-width:680px;">
-                    The same memory-management problem appears everywhere —
-                    from kernel scheduling to browser caches.
-                </p>
-            </div>
-
-            <div class="row g-4">
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-desktop fa-2x text-info mb-3"></i>
-                        <h6 class="fw-bold text-white">Operating Systems</h6>
-                        <p class="text-light-muted small mb-0">
-                            When physical RAM is insufficient, the OS manages pages between
-                            main memory and secondary storage (swap/pagefile).
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-globe fa-2x text-purple mb-3"></i>
-                        <h6 class="fw-bold text-white">Web Browsers</h6>
-                        <p class="text-light-muted small mb-0">
-                            Browsers manage large amounts of active and inactive tab data
-                            and need efficient cache eviction strategies.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-database fa-2x text-success mb-3"></i>
-                        <h6 class="fw-bold text-white">Database Systems</h6>
-                        <p class="text-light-muted small mb-0">
-                            Database buffer pools cache disk pages in memory and must
-                            replace pages efficiently to sustain query performance.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-cloud fa-2x text-warning mb-3"></i>
-                        <h6 class="fw-bold text-white">Cloud Computing</h6>
-                        <p class="text-light-muted small mb-0">
-                            Virtual machines and containers operate under memory constraints
-                            and require efficient page management across tenants.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-mobile-alt fa-2x text-danger mb-3"></i>
-                        <h6 class="fw-bold text-white">Mobile Devices</h6>
-                        <p class="text-light-muted small mb-0">
-                            Mobile OSes must manage limited RAM among multiple foreground
-                            and background applications, killing processes when necessary.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-4">
-                    <div class="use-card">
-                        <i class="fas fa-microchip fa-2x text-accent mb-3"></i>
-                        <h6 class="fw-bold text-white">Embedded Systems</h6>
-                        <p class="text-light-muted small mb-0">
-                            Devices with severely limited memory need aggressive and
-                            predictable memory utilization strategies.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- =============== CTA =============== -->
+    <!-- =============== CTA SECTION =============== -->
     <section class="py-5 text-center">
         <div class="container py-5">
-            <h2 class="fw-bold text-white mb-3">Ready to Explore?</h2>
-            <p class="text-light-muted mb-4 mx-auto" style="max-width:520px;">
-                Launch the simulator, enter a reference string, pick an algorithm,
-                and watch how an OS decides which pages stay in RAM.
+            <h2 class="fw-bold text-white mb-3">Ready to Run the Simulation?</h2>
+            <p class="text-light-muted mb-4 mx-auto" style="max-width:560px;">
+                Select a hospital workflow, enter your custom page sequence, configure memory frames, and observe how FIFO, LRU and Optimal algorithms handle page replacement in real time.
             </p>
-            <a href="/simulator" class="btn btn-accent btn-lg px-5 shadow-glow">
-                <i class="fas fa-rocket me-2"></i>Open Simulator
+            <a href="/workflow-select" class="btn btn-accent btn-lg px-5 shadow-glow">
+                <i class="fas fa-play me-2"></i>Open SmartRAM Simulator
             </a>
         </div>
     </section>
 
     <!-- =============== FOOTER =============== -->
-    <footer class="py-4 border-top border-dark">
+    <footer class="py-4 border-top border-dark-2 bg-darker">
         <div class="container text-center">
             <p class="text-light-muted small mb-1">
-                <i class="fas fa-microchip me-1 text-accent"></i>
-                <strong>SmartRAM</strong> — Interactive Virtual Memory & Page Replacement Simulator
+                <span class="brand-icon-wrap" style="width:20px;height:20px;font-size:0.7rem;">
+                    <i class="fas fa-hospital-user"></i>
+                </span>
+                <strong>SmartRAM</strong> — Hospital Information System Memory Simulation
             </p>
-            <p class="text-light-muted small mb-0">Operating Systems Academic Project</p>
+            <p class="text-dim small mb-0">
+                Operating Systems Academic Project • Educational Simulation • FIFO, LRU & Optimal Algorithms
+            </p>
         </div>
     </footer>
 
+    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

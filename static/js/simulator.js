@@ -1,120 +1,254 @@
 /* ============================================================
-   SmartRAM Simulator — Frontend JavaScript
+   SmartRAM — Hospital Information System Memory Simulation
+   Interactive Frontend Controller & Visualization Engine
    ============================================================ */
 
-// State
+// Application State
+let hospitalScenarios = [];
+let activeScenario = null;
+let currentWorkloadMode = 'scenarios'; // 'scenarios' | 'custom'
+let selectedAlgorithm = 'FIFO'; // 'FIFO' | 'LRU' | 'OPTIMAL' | 'ALL'
+
 let currentSimulation = null;
 let currentStep = 0;
 let autoPlayInterval = null;
-let selectedAlgorithm = 'FIFO';
 let comparisonResults = null;
 
-// Charts
-let hitFaultChart = null;
-let faultTimeChart = null;
-let compChart = null;
+// Chart.js Instances
+let hitFaultDoughnutChart = null;
+let cumulativeFaultLineChart = null;
+let compBarChart = null;
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
-    loadScenarios();
-    initTooltips();
+    loadHospitalScenarios();
+    initBootstrapTooltips();
 });
 
-function initTooltips() {
+function initBootstrapTooltips() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 }
 
 function initializeEventListeners() {
-    // Algorithm buttons
-    document.querySelectorAll('.algo-btn').forEach(btn => {
-        btn.addEventListener('click', () => selectAlgorithm(btn));
+    // Keyboard shortcuts for step navigation
+    document.addEventListener('keydown', (e) => {
+        if (!currentSimulation || currentSimulation.comparison) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
+            navigateStep(1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+            navigateStep(-1);
+        } else if (e.key === ' ') {
+            e.preventDefault();
+            toggleAutoPlay();
+        }
     });
-
-    // Run simulation
-    document.getElementById('btnRun').addEventListener('click', runSimulation);
-    document.getElementById('btnReset').addEventListener('click', resetSimulation);
-
-    // Playback controls
-    document.getElementById('btnPrev').addEventListener('click', () => navigateStep(-1));
-    document.getElementById('btnNext').addEventListener('click', () => navigateStep(1));
-    document.getElementById('btnAutoPlay').addEventListener('click', toggleAutoPlay);
-
-    // Scenario selector
-    document.getElementById('scenarioSelect').addEventListener('change', loadScenario);
-
-    // Multi-process
-    document.getElementById('btnToggleMultiProc').addEventListener('click', toggleMultiProcess);
 }
 
-function selectAlgorithm(btn) {
-    document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('algo-btn-active'));
-    btn.classList.add('algo-btn-active');
-    selectedAlgorithm = btn.dataset.algo;
-}
-
-// ==================== LOAD SCENARIOS ====================
-async function loadScenarios() {
+// ==================== LOAD HOSPITAL SCENARIOS ====================
+async function loadHospitalScenarios() {
+    const container = document.getElementById('scenarioCardsList');
     try {
         const response = await fetch('/api/scenarios');
-        const scenarios = await response.json();
+        if (!response.ok) throw new Error('Failed to load scenarios');
 
-        const select = document.getElementById('scenarioSelect');
-        scenarios.forEach(scenario => {
-            const option = document.createElement('option');
-            option.value = scenario.id;
-            option.textContent = scenario.name;
-            option.dataset.refString = scenario.reference_string;
-            option.dataset.frames = scenario.frames;
-            option.dataset.desc = scenario.description;
-            select.appendChild(option);
-        });
+        hospitalScenarios = await response.json();
+        renderScenarioCards(hospitalScenarios);
+
+        // Select first scenario by default
+        if (hospitalScenarios.length > 0) {
+            selectScenario(hospitalScenarios[0].id);
+        }
     } catch (err) {
-        console.error('Failed to load scenarios:', err);
+        console.error('Error fetching scenarios:', err);
+        container.innerHTML = `
+            <div class="alert alert-danger py-2 small mb-2">
+                <i class="fas fa-triangle-exclamation me-1"></i> Failed to load hospital workloads.
+            </div>
+        `;
     }
 }
 
-function loadScenario(e) {
-    const option = e.target.selectedOptions[0];
-    if (!option.value) {
-        document.getElementById('scenarioDesc').textContent = '';
+function renderScenarioCards(scenarios) {
+    const container = document.getElementById('scenarioCardsList');
+    let html = '';
+
+    scenarios.forEach((sc, index) => {
+        html += `
+            <div class="scenario-card-item ${index === 0 ? 'selected' : ''}"
+                 id="scenario-card-${sc.id}"
+                 onclick="selectScenario('${sc.id}')">
+                <div class="scenario-card-title">
+                    <span><i class="fas ${sc.icon || 'fa-hospital'} text-teal me-2"></i>${sc.name}</span>
+                    <span class="badge bg-teal-soft text-teal" style="font-size:0.6rem;">${sc.badge || 'Workflow'}</span>
+                </div>
+                <div class="scenario-card-desc">${sc.description}</div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="scenario-card-seq">${sc.reference_string}</span>
+                    <span class="text-dim" style="font-size:0.68rem;">${sc.frames} Frames</span>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectScenario(scenarioId) {
+    const scenario = hospitalScenarios.find(s => s.id === scenarioId);
+    if (!scenario) return;
+
+    activeScenario = scenario;
+
+    // Update Card UI
+    document.querySelectorAll('.scenario-card-item').forEach(card => {
+        card.classList.remove('selected');
+    });
+    const activeCard = document.getElementById(`scenario-card-${scenarioId}`);
+    if (activeCard) activeCard.classList.add('selected');
+
+    // Update Active Badge
+    const badge = document.getElementById('activeScenarioBadge');
+    if (badge) badge.textContent = scenario.name.split(' ')[0];
+
+    // Populate sequence & frames
+    document.getElementById('refString').value = scenario.reference_string;
+    document.getElementById('numFrames').value = scenario.frames;
+    updateFrameDisplay(scenario.frames);
+
+    // Update Scenario Page Mapping Tags
+    renderScenarioMappings(scenario.page_mappings);
+
+    // Update timeline label
+    const timelineLabel = document.getElementById('timelineScenarioLabel');
+    if (timelineLabel) timelineLabel.textContent = scenario.name;
+}
+
+function renderScenarioMappings(mappings) {
+    const container = document.getElementById('scenarioMappingTags');
+    if (!mappings || Object.keys(mappings).length === 0) {
+        container.innerHTML = '<span class="text-dim">Standard page identifiers.</span>';
         return;
     }
 
-    document.getElementById('refString').value = option.dataset.refString;
-    document.getElementById('numFrames').value = option.dataset.frames;
-    document.getElementById('frameDisplay').textContent = option.dataset.frames;
-    document.getElementById('scenarioDesc').textContent = option.dataset.desc;
+    let html = '';
+    for (const [pageId, name] of Object.entries(mappings)) {
+        html += `
+            <span class="mapping-tag" title="Page ${pageId} represents ${name}">
+                <span class="page-num">P${pageId}:</span> ${name}
+            </span>
+        `;
+    }
+    container.innerHTML = html;
+}
+
+// ==================== WORKLOAD MODE SWITCHING ====================
+function switchWorkloadMode(mode) {
+    currentWorkloadMode = mode;
+
+    const tabScenarios = document.getElementById('tabScenarios');
+    const tabCustom = document.getElementById('tabCustom');
+    const secScenarios = document.getElementById('sectionHospitalScenarios');
+    const secCustom = document.getElementById('sectionCustomSequence');
+
+    if (mode === 'scenarios') {
+        tabScenarios.classList.add('active');
+        tabCustom.classList.remove('active');
+        secScenarios.classList.remove('d-none');
+        secCustom.classList.add('d-none');
+
+        if (activeScenario) {
+            document.getElementById('refString').value = activeScenario.reference_string;
+            document.getElementById('timelineScenarioLabel').textContent = activeScenario.name;
+        }
+    } else {
+        tabCustom.classList.add('active');
+        tabScenarios.classList.remove('active');
+        secCustom.classList.remove('d-none');
+        secScenarios.classList.add('d-none');
+
+        document.getElementById('timelineScenarioLabel').textContent = 'Custom Sequence';
+    }
+}
+
+function loadQuickSequence(seq) {
+    document.getElementById('refString').value = seq;
+    hideError();
+}
+
+function updateFrameDisplay(val) {
+    document.getElementById('frameDisplay').textContent = val;
+}
+
+// ==================== ALGORITHM SELECTION ====================
+function selectAlgorithm(algo) {
+    selectedAlgorithm = algo;
+
+    // Reset button states
+    document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('algo-btn-active'));
+    const compBtn = document.getElementById('btnCompareMode');
+    if (compBtn) compBtn.classList.remove('algo-btn-active');
+
+    if (algo === 'ALL') {
+        if (compBtn) compBtn.classList.add('algo-btn-active');
+    } else {
+        const activeBtn = document.querySelector(`.algo-btn[data-algo="${algo}"]`);
+        if (activeBtn) activeBtn.classList.add('algo-btn-active');
+    }
+
+    // Update Brief Explanation
+    const infoMap = {
+        'FIFO': {
+            name: 'FIFO (First In, First Out)',
+            desc: 'Replaces the page that entered physical memory earliest. Uses a simple arrival queue.'
+        },
+        'LRU': {
+            name: 'LRU (Least Recently Used)',
+            desc: 'Replaces the page that has not been accessed for the longest time. Exploits temporal locality.'
+        },
+        'OPTIMAL': {
+            name: 'Optimal (Clairvoyant Benchmark)',
+            desc: 'Replaces the page whose next use is farthest in the future. Serves as theoretical mathematical ceiling.'
+        },
+        'ALL': {
+            name: 'Comparative Benchmark Evaluation',
+            desc: 'Executes FIFO, LRU, and Optimal simultaneously on the identical workload and frame allocation.'
+        }
+    };
+
+    const info = infoMap[algo] || infoMap['FIFO'];
+    document.getElementById('algoNameBrief').textContent = info.name;
+    document.getElementById('algoDescBrief').textContent = info.desc;
 }
 
 // ==================== RUN SIMULATION ====================
 async function runSimulation() {
-    // Clear errors
     hideError();
     document.getElementById('refStringError').textContent = '';
 
-    // Get values
-    const refString = document.getElementById('refString').value.trim();
+    const refStringInput = document.getElementById('refString').value.trim();
     const numFrames = parseInt(document.getElementById('numFrames').value);
 
-    // Validate
-    if (!refString) {
-        document.getElementById('refStringError').textContent = 'Reference string is required';
+    // Basic frontend validation
+    if (!refStringInput) {
+        document.getElementById('refStringError').textContent = 'Please enter a page sequence.';
+        showError('Page sequence cannot be empty.');
         return;
     }
 
-    // Prepare request
     const payload = {
         algorithm: selectedAlgorithm,
         frames: numFrames,
-        reference_string: refString
+        reference_string: refStringInput
     };
 
-    // Disable button
     const btnRun = document.getElementById('btnRun');
+    const originalBtnHtml = btnRun.innerHTML;
     btnRun.disabled = true;
-    btnRun.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running...';
+    btnRun.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Simulating...';
 
     try {
         const response = await fetch('/api/simulate', {
@@ -123,242 +257,295 @@ async function runSimulation() {
             body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+        const data = await response.json();
 
         if (!response.ok) {
-            showError(result.error || 'Simulation failed');
+            showError(data.error || 'Simulation failed to run.');
             return;
         }
 
-        // Handle comparison vs single
-        if (result.comparison) {
-            displayComparisonResults(result);
+        if (data.comparison) {
+            displayComparisonResults(data, numFrames);
         } else {
-            displaySimulationResults(result);
+            displaySingleSimulation(data);
         }
 
     } catch (err) {
         showError('Network error: ' + err.message);
     } finally {
         btnRun.disabled = false;
-        btnRun.innerHTML = '<i class="fas fa-play me-2"></i>Run Simulation';
+        btnRun.innerHTML = originalBtnHtml;
     }
 }
 
-// ==================== DISPLAY RESULTS ====================
-function displaySimulationResults(result) {
+// ==================== DISPLAY SINGLE ALGORITHM SIMULATION ====================
+function displaySingleSimulation(result) {
     currentSimulation = result;
     currentStep = 0;
     comparisonResults = null;
 
-    // Show content, hide empty state
+    // UI state switches
     document.getElementById('emptyState').classList.add('d-none');
     document.getElementById('simContent').classList.remove('d-none');
     document.getElementById('comparisonSection').classList.add('d-none');
-    document.getElementById('chartsSection').classList.remove('d-none');
+    document.getElementById('ramAndTraceRow').classList.remove('d-none');
+    document.getElementById('individualChartsSection').classList.remove('d-none');
+    document.getElementById('playbackBar').classList.remove('d-none');
+    document.getElementById('stepExplanationCard').classList.remove('d-none');
 
-    // Render stats
-    renderStats(result);
+    // Update Algorithm Badge
+    document.getElementById('algoLabelBadge').textContent = result.algorithm;
 
-    // Render algorithm label
-    document.getElementById('algoLabel').textContent = result.algorithm;
+    // Render Stats
+    renderStats({
+        total_references: result.total_references,
+        page_hits: result.page_hits,
+        page_faults: result.page_faults,
+        page_replacements: result.page_replacements,
+        hit_ratio: result.hit_ratio,
+        fault_ratio: result.fault_ratio
+    });
 
-    // Render trace table header
-    renderTraceHeader(result.frames);
+    // Render Reference String Progress Tokens
+    renderReferenceTokens(result.steps);
 
-    // Render trace body
-    renderTraceBody(result.steps);
+    // Render Trace Table Header & Body
+    renderTraceTableHeader(result.frames);
+    renderTraceTableBody(result.steps, result.frames);
 
-    // Render algorithm info
-    renderAlgorithmInfo(result.algorithm);
+    // Render Charts
+    renderHitFaultDoughnut(result.page_hits, result.page_faults);
+    renderCumulativeFaultLine(result.steps);
 
-    // Render charts
-    renderHitFaultChart(result);
-    renderFaultTimeChart(result);
-
-    // Enable playback controls
-    enablePlaybackControls();
-
-    // Show first step
+    // Display Initial Step (Step 0)
     showStep(0);
 }
 
-function displayComparisonResults(result) {
-    currentSimulation = null;
+// ==================== DISPLAY COMPARISON RESULTS ====================
+function displayComparisonResults(data, frames) {
+    currentSimulation = { comparison: true, results: data.results };
     currentStep = 0;
-    comparisonResults = result;
+    comparisonResults = data;
 
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+    }
+
+    // UI State
     document.getElementById('emptyState').classList.add('d-none');
     document.getElementById('simContent').classList.remove('d-none');
     document.getElementById('comparisonSection').classList.remove('d-none');
-    document.getElementById('chartsSection').classList.add('d-none');
+    document.getElementById('ramAndTraceRow').classList.add('d-none');
+    document.getElementById('individualChartsSection').classList.add('d-none');
+    document.getElementById('playbackBar').classList.add('d-none');
+    document.getElementById('stepExplanationCard').classList.add('d-none');
 
-    // Hide RAM visualization and step controls
-    document.getElementById('algoLabel').textContent = 'COMPARISON';
-    document.getElementById('btnPrev').disabled = true;
-    document.getElementById('btnNext').disabled = true;
-    document.getElementById('btnAutoPlay').disabled = true;
+    const first = data.results[0];
 
-    // Render comparison stats (use first result)
-    const first = result.results[0];
+    // Render Comparison Stats Overview
     renderStats({
         total_references: first.total_references,
         page_hits: '—',
         page_faults: '—',
+        page_replacements: '—',
         hit_ratio: '—',
         fault_ratio: '—'
     });
 
-    // Render comparison table
-    renderComparisonTable(result);
+    // Render Reference String Progress Tokens (Neutral)
+    renderReferenceTokens(first.steps, true);
 
-    // Render comparison chart
-    renderComparisonChart(result);
+    // Render Comparison Table
+    renderComparisonTable(data);
 
-    // Hide RAM and trace
-    document.getElementById('ramVisualization').innerHTML = '<p class="text-center text-light-muted small mt-3">Select individual algorithm to see step-by-step trace</p>';
-    document.getElementById('traceHead').innerHTML = '';
-    document.getElementById('traceBody').innerHTML = '';
-    document.getElementById('stepCounter').textContent = '—';
-    document.getElementById('currentStepBadge').textContent = '';
-
-    // Hide algo info
-    document.getElementById('algoInfoRow').innerHTML = '';
+    // Render Comparison Bar Chart
+    renderComparisonBarChart(data);
 }
 
-function renderStats(result) {
-    const stats = [
-        { icon: 'fa-hashtag', label: 'Total References', value: result.total_references, color: 'info' },
-        { icon: 'fa-circle-check', label: 'Page Hits', value: result.page_hits, color: 'success' },
-        { icon: 'fa-circle-xmark', label: 'Page Faults', value: result.page_faults, color: 'danger' },
-        { icon: 'fa-percentage', label: 'Hit Ratio', value: result.hit_ratio === '—' ? '—' : result.hit_ratio + '%', color: 'purple' },
-        { icon: 'fa-chart-line', label: 'Fault Ratio', value: result.fault_ratio === '—' ? '—' : result.fault_ratio + '%', color: 'warning' }
+// ==================== RENDER STATS CARDS ====================
+function renderStats(stats) {
+    const items = [
+        {
+            icon: 'fa-layer-group',
+            label: 'Total Requests',
+            value: stats.total_references,
+            color: 'teal',
+            bg: 'var(--teal-soft)',
+            fg: 'var(--teal-light)'
+        },
+        {
+            icon: 'fa-circle-check',
+            label: 'Page Hits',
+            value: stats.page_hits,
+            color: 'success',
+            bg: 'var(--hit-soft)',
+            fg: 'var(--hit-color)'
+        },
+        {
+            icon: 'fa-circle-xmark',
+            label: 'Page Faults',
+            value: stats.page_faults,
+            color: 'danger',
+            bg: 'var(--fault-soft)',
+            fg: 'var(--fault-color)'
+        },
+        {
+            icon: 'fa-right-left',
+            label: 'Replacements',
+            value: stats.page_replacements,
+            color: 'warning',
+            bg: 'var(--replace-soft)',
+            fg: 'var(--replace-color)'
+        },
+        {
+            icon: 'fa-chart-pie',
+            label: 'Hit Ratio',
+            value: stats.hit_ratio === '—' ? '—' : `${stats.hit_ratio}%`,
+            color: 'teal',
+            bg: 'var(--teal-soft)',
+            fg: 'var(--teal-light)'
+        },
+        {
+            icon: 'fa-chart-line',
+            label: 'Fault Ratio',
+            value: stats.fault_ratio === '—' ? '—' : `${stats.fault_ratio}%`,
+            color: 'danger',
+            bg: 'var(--fault-soft)',
+            fg: 'var(--fault-color)'
+        }
     ];
 
-    const colorMap = {
-        info: 'rgba(88,166,255,.15)',
-        success: 'rgba(87,242,135,.15)',
-        danger: 'rgba(237,66,69,.15)',
-        purple: 'rgba(188,140,255,.15)',
-        warning: 'rgba(254,231,92,.15)'
-    };
-
-    const textColorMap = {
-        info: '#58a6ff',
-        success: '#57f287',
-        danger: '#ed4245',
-        purple: '#bc8cff',
-        warning: '#fee75c'
-    };
-
-    const html = stats.map(stat => `
-        <div class="col-lg col-md-4 col-6">
-            <div class="stat-card">
-                <div class="stat-icon" style="background:${colorMap[stat.color]};color:${textColorMap[stat.color]};">
-                    <i class="fas ${stat.icon}"></i>
-                </div>
-                <div>
-                    <div class="stat-value">${stat.value}</div>
-                    <div class="stat-label">${stat.label}</div>
+    let html = '';
+    items.forEach(item => {
+        html += `
+            <div class="col-xl-2 col-lg-4 col-md-4 col-6">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:${item.bg}; color:${item.fg};">
+                        <i class="fas ${item.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value" style="color:${item.fg};">${item.value}</div>
+                        <div class="stat-label">${item.label}</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    });
 
     document.getElementById('statsRow').innerHTML = html;
 }
 
-function renderTraceHeader(numFrames) {
-    let html = '<tr><th>Step</th><th>Page</th>';
-    for (let i = 1; i <= numFrames; i++) {
-        html += `<th>Frame ${i}</th>`;
-    }
-    html += '<th>Result</th></tr>';
-    document.getElementById('traceHead').innerHTML = html;
-}
+// ==================== REFERENCE TOKENS STRIP ====================
+function renderReferenceTokens(steps, isComparison = false) {
+    const container = document.getElementById('referenceTokensStrip');
+    let html = '';
 
-function renderTraceBody(steps) {
-    const html = steps.map((step, idx) => {
-        const rowClass = step.result === 'HIT' ? 'row-hit' : 'row-fault';
-        const badge = step.result === 'HIT'
-            ? '<span class="badge badge-hit-sm">HIT</span>'
-            : '<span class="badge badge-fault-sm">FAULT</span>';
+    steps.forEach((step, idx) => {
+        const pageName = getPageConceptName(step.requested_page);
+        const tooltip = `Step ${step.step}: Page ${step.requested_page}${pageName ? ' (' + pageName + ')' : ''}`;
 
-        let frameCells = '';
-        for (let i = 0; i < step.frames.length; i++) {
-            const val = step.frames[i] !== null ? step.frames[i] : '—';
-            frameCells += `<td>${val}</td>`;
-        }
-
-        // Add extra empty cells if needed
-        const maxFrames = parseInt(document.getElementById('numFrames').value);
-        for (let i = step.frames.length; i < maxFrames; i++) {
-            frameCells += '<td>—</td>';
-        }
-
-        return `<tr class="${rowClass}" data-step="${idx}">
-            <td>${step.step}</td>
-            <td class="fw-bold">${step.requested_page}</td>
-            ${frameCells}
-            <td>${badge}</td>
-        </tr>`;
-    }).join('');
-
-    document.getElementById('traceBody').innerHTML = html;
-}
-
-function renderAlgorithmInfo(algorithm) {
-    const info = {
-        'FIFO': {
-            idea: 'Replace the page that has been in memory the longest (first in, first out).',
-            advantage: 'Simple to implement using a queue. Low overhead.',
-            disadvantage: 'Can suffer from Bélády\'s Anomaly where increasing frames increases page faults.',
-            complexity: 'Time: O(1) per reference, Space: O(n)'
-        },
-        'LRU': {
-            idea: 'Replace the page that has not been accessed for the longest period.',
-            advantage: 'Exploits temporal locality. Usually performs better than FIFO for real workloads.',
-            disadvantage: 'Requires tracking page usage order, which adds overhead.',
-            complexity: 'Time: O(n) per reference, Space: O(n)'
-        },
-        'OPTIMAL': {
-            idea: 'Replace the page whose next use is farthest in the future.',
-            advantage: 'Provably optimal — guarantees the minimum number of page faults possible.',
-            disadvantage: 'Requires future knowledge. Not implementable in real systems.',
-            complexity: 'Time: O(n·f) per reference, Space: O(n)'
-        }
-    };
-
-    const data = info[algorithm];
-    if (!data) {
-        document.getElementById('algoInfoRow').innerHTML = '';
-        return;
-    }
-
-    const html = `
-        <div class="col-12">
-            <div class="algo-info-card">
-                <h6><i class="fas fa-info-circle me-2 text-accent"></i>${algorithm} Algorithm Details</h6>
-                <p><strong>Idea:</strong> ${data.idea}</p>
-                <p><strong>Advantage:</strong> ${data.advantage}</p>
-                <p><strong>Disadvantage:</strong> ${data.disadvantage}</p>
-                <p class="mb-0"><strong>Complexity:</strong> ${data.complexity}</p>
+        html += `
+            <div class="ref-token" id="refToken-${idx}"
+                 title="${tooltip}"
+                 onclick="${isComparison ? '' : 'navigateStepTo(' + idx + ')'}">
+                <span class="token-step-num">#${step.step}</span>
+                <span>${step.requested_page}</span>
             </div>
-        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function updateReferenceTokensProgress(activeStepIdx, steps) {
+    steps.forEach((step, idx) => {
+        const tokenEl = document.getElementById(`refToken-${idx}`);
+        if (!tokenEl) return;
+
+        tokenEl.className = 'ref-token';
+
+        if (idx === activeStepIdx) {
+            tokenEl.classList.add('token-active');
+        } else if (idx < activeStepIdx) {
+            if (step.result === 'HIT') {
+                tokenEl.classList.add('token-hit');
+            } else {
+                tokenEl.classList.add('token-fault');
+            }
+        }
+    });
+
+    // Auto-scroll token into view
+    const activeToken = document.getElementById(`refToken-${activeStepIdx}`);
+    if (activeToken) {
+        activeToken.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+}
+
+// ==================== STEP-BY-STEP TRACE TABLE ====================
+function renderTraceTableHeader(numFrames) {
+    let html = `
+        <tr>
+            <th style="width: 50px;">Step</th>
+            <th style="width: 70px;">Page</th>
+            <th>Hospital Workflow Context</th>
     `;
 
-    document.getElementById('algoInfoRow').innerHTML = html;
+    for (let i = 1; i <= numFrames; i++) {
+        html += `<th class="text-center" style="min-width: 65px;">Frame ${i}</th>`;
+    }
+
+    html += `
+            <th class="text-center" style="width: 90px;">Result</th>
+            <th class="text-center" style="width: 100px;">Evicted Page</th>
+        </tr>
+    `;
+
+    document.getElementById('traceTableHead').innerHTML = html;
 }
 
-// ==================== STEP NAVIGATION ====================
-function enablePlaybackControls() {
-    document.getElementById('btnPrev').disabled = false;
-    document.getElementById('btnNext').disabled = false;
-    document.getElementById('btnAutoPlay').disabled = false;
+function renderTraceTableBody(steps, numFrames) {
+    let html = '';
+
+    steps.forEach((step, idx) => {
+        const isHit = step.result === 'HIT';
+        const rowClass = isHit ? 'row-hit' : 'row-fault';
+        const badge = isHit
+            ? '<span class="frame-badge badge-hit"><i class="fas fa-circle-check"></i> HIT</span>'
+            : '<span class="frame-badge badge-fault"><i class="fas fa-circle-xmark"></i> FAULT</span>';
+
+        const conceptName = getPageConceptName(step.requested_page) || 'Synthetic Page Reference';
+
+        let frameCells = '';
+        for (let f = 0; f < numFrames; f++) {
+            const val = step.frames[f] !== undefined && step.frames[f] !== null ? step.frames[f] : '—';
+            const isResident = val !== '—';
+            frameCells += `<td class="text-center font-monospace ${isResident ? 'text-white' : 'text-dim'}">${val}</td>`;
+        }
+
+        const evicted = step.replaced_page !== null && step.replaced_page !== undefined
+            ? `<span class="frame-badge badge-replace">Page ${step.replaced_page}</span>`
+            : '<span class="text-dim">—</span>';
+
+        html += `
+            <tr class="${rowClass}" id="traceRow-${idx}" onclick="navigateStepTo(${idx})">
+                <td class="font-monospace fw-bold">#${step.step}</td>
+                <td class="font-monospace fw-bold text-teal">${step.requested_page}</td>
+                <td class="small text-secondary">${conceptName}</td>
+                ${frameCells}
+                <td class="text-center">${badge}</td>
+                <td class="text-center">${evicted}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('traceTableBody').innerHTML = html;
 }
 
+// ==================== STEP NAVIGATION & RAM DISPLAY ====================
 function showStep(stepIndex) {
-    if (!currentSimulation) return;
+    if (!currentSimulation || !currentSimulation.steps) return;
 
     const steps = currentSimulation.steps;
     if (stepIndex < 0 || stepIndex >= steps.length) return;
@@ -366,133 +553,250 @@ function showStep(stepIndex) {
     currentStep = stepIndex;
     const step = steps[stepIndex];
 
-    // Update step counter
-    document.getElementById('stepCounter').textContent = `Step ${stepIndex + 1} / ${steps.length}`;
-    document.getElementById('currentStepBadge').textContent = `Step ${stepIndex + 1} / ${steps.length}`;
+    // Update Counter Badges
+    const counterText = `Step ${stepIndex + 1} of ${steps.length}`;
+    document.getElementById('stepCounterBadge').textContent = counterText;
+    document.getElementById('currentStepIndicator').textContent = `Step ${stepIndex + 1} / ${steps.length}`;
 
-    // Render RAM visualization
-    renderRAM(step, currentSimulation.frames);
+    // Update Reference String Tokens
+    updateReferenceTokensProgress(stepIndex, steps);
 
-    // Highlight row in table
-    document.querySelectorAll('#traceBody tr').forEach((tr, idx) => {
+    // Render RAM Visualization Frames
+    renderRAMFrames(step, currentSimulation.frames);
+
+    // Generate Dynamic Plain-Language Explanation
+    renderStepExplanation(step, stepIndex, steps);
+
+    // Highlight row in Trace Table
+    document.querySelectorAll('#traceTableBody tr').forEach((tr, idx) => {
         tr.classList.toggle('row-active', idx === stepIndex);
     });
 
-    // Scroll to row
-    const activeRow = document.querySelector('#traceBody tr.row-active');
+    const activeRow = document.getElementById(`traceRow-${stepIndex}`);
     if (activeRow) {
-        activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Update button states
+    // Update Playback Navigation Buttons
+    document.getElementById('btnFirst').disabled = stepIndex === 0;
     document.getElementById('btnPrev').disabled = stepIndex === 0;
     document.getElementById('btnNext').disabled = stepIndex === steps.length - 1;
+    document.getElementById('btnLast').disabled = stepIndex === steps.length - 1;
 }
 
-function renderRAM(step, numFrames) {
+function renderRAMFrames(step, numFrames) {
+    const container = document.getElementById('ramFramesContainer');
     let html = '';
 
-    for (let i = 0; i < numFrames; i++) {
-        const page = step.frames[i];
+    for (let f = 0; f < numFrames; f++) {
+        const page = step.frames[f];
         const isEmpty = page === null || page === undefined;
 
-        let frameClass = 'ram-frame';
-        let badgeHtml = '';
+        let frameClass = 'ram-frame-card';
+        let badgeHtml = '<span class="frame-badge badge-empty">Empty</span>';
+        let contextLabel = 'Unallocated memory slot';
 
-        if (!isEmpty && step.requested_page === page) {
-            if (step.result === 'HIT') {
-                frameClass += ' frame-hit frame-animate';
-                badgeHtml = '<span class="ram-frame-badge badge-hit">HIT</span>';
+        if (!isEmpty) {
+            const pageName = getPageConceptName(page);
+            contextLabel = pageName ? pageName : `Page ${page} in resident set`;
+
+            if (step.requested_page === page) {
+                if (step.result === 'HIT') {
+                    frameClass += ' frame-hit';
+                    badgeHtml = '<span class="frame-badge badge-hit"><i class="fas fa-check"></i> HIT</span>';
+                } else if (step.replaced_page !== null) {
+                    frameClass += ' frame-replace';
+                    badgeHtml = `<span class="frame-badge badge-replace"><i class="fas fa-arrows-rotate"></i> REPLACED</span>`;
+                } else {
+                    frameClass += ' frame-fault';
+                    badgeHtml = '<span class="frame-badge badge-fault"><i class="fas fa-download"></i> LOADED</span>';
+                }
             } else if (step.replaced_page === page) {
-                frameClass += ' frame-replace frame-animate';
-                badgeHtml = '<span class="ram-frame-badge badge-replace">NEW</span>';
+                frameClass += ' frame-replace';
+                badgeHtml = '<span class="frame-badge badge-replace">EVICTED</span>';
             } else {
                 frameClass += ' frame-current';
+                badgeHtml = '<span class="frame-badge bg-dark-card text-muted border border-dark-2">Resident</span>';
             }
-        } else if (step.replaced_page === page) {
-            frameClass += ' frame-replace frame-animate';
-            badgeHtml = '<span class="ram-frame-badge badge-replace">REPLACED</span>';
         }
 
         html += `
             <div class="${frameClass}">
-                <div class="ram-frame-label">Frame ${i + 1}</div>
-                <div class="ram-frame-value">${isEmpty ? '—' : 'Page ' + page}</div>
-                ${badgeHtml}
+                <div class="ram-frame-meta">
+                    <div class="ram-frame-number">Frame ${f + 1}</div>
+                    <div class="ram-frame-context text-truncate" style="max-width: 170px;">${contextLabel}</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="ram-frame-content ${isEmpty ? 'empty' : ''}">
+                        ${isEmpty ? '—' : 'Page ' + page}
+                    </div>
+                    ${badgeHtml}
+                </div>
             </div>
         `;
     }
 
-    document.getElementById('ramVisualization').innerHTML = html;
+    container.innerHTML = html;
 }
 
+// ==================== PLAIN-LANGUAGE EXPLANATION GENERATOR ====================
+function renderStepExplanation(step, stepIndex, steps) {
+    const headerEl = document.getElementById('stepExplanationHeader');
+    const bodyEl = document.getElementById('stepExplanationBody');
+
+    const reqPage = step.requested_page;
+    const pageContext = getPageConceptName(reqPage);
+    const contextPrefix = pageContext ? `Page ${reqPage} (<em>${pageContext}</em>)` : `Page ${reqPage}`;
+
+    headerEl.innerHTML = `Step ${step.step}: Memory Access for ${contextPrefix}`;
+
+    let explanation = '';
+
+    if (step.result === 'HIT') {
+        explanation = `
+            <strong>PAGE HIT:</strong> ${contextPrefix} is already resident in physical memory.
+            The memory management unit (MMU) directly resolves the virtual address to physical RAM with zero disk I/O latency. No page eviction or replacement is required.
+        `;
+    } else {
+        // Page fault
+        if (step.replaced_page === null || step.replaced_page === undefined) {
+            explanation = `
+                <strong>PAGE FAULT (Cold / Demand Load):</strong> ${contextPrefix} was not resident in memory.
+                Because available empty frames were present in physical RAM, ${contextPrefix} was allocated an empty frame directly from secondary storage without needing to evict any existing resident page.
+            `;
+        } else {
+            const replacedContext = getPageConceptName(step.replaced_page);
+            const replacedLabel = replacedContext ? `Page ${step.replaced_page} (<em>${replacedContext}</em>)` : `Page ${step.replaced_page}`;
+
+            let algoLogic = '';
+            if (currentSimulation.algorithm === 'FIFO') {
+                algoLogic = `All frames were occupied. Under <strong>FIFO</strong> (First In, First Out), ${replacedLabel} was selected as the victim because it entered physical memory earliest among all resident pages.`;
+            } else if (currentSimulation.algorithm === 'LRU') {
+                algoLogic = `All frames were occupied. Under <strong>LRU</strong> (Least Recently Used), ${replacedLabel} was selected as the victim because it has remained unreferenced for the longest continuous interval.`;
+            } else if (currentSimulation.algorithm === 'OPTIMAL') {
+                algoLogic = `All frames were occupied. Under <strong>Optimal</strong> (Clairvoyant), ${replacedLabel} was selected because its next referenced request occurs farthest in the future (or never again).`;
+            } else {
+                algoLogic = `All frames were occupied. The active algorithm selected ${replacedLabel} as the eviction candidate.`;
+            }
+
+            explanation = `
+                <strong>PAGE FAULT with REPLACEMENT:</strong> ${contextPrefix} was not present in physical RAM.
+                ${algoLogic} ${replacedLabel} was evicted to disk, and ${contextPrefix} was loaded into its frame.
+            `;
+        }
+    }
+
+    bodyEl.innerHTML = explanation;
+}
+
+// Helper to look up conceptual hospital page name
+function getPageConceptName(pageNumber) {
+    if (activeScenario && activeScenario.page_mappings) {
+        return activeScenario.page_mappings[String(pageNumber)] || null;
+    }
+    return null;
+}
+
+// ==================== PLAYBACK CONTROLS ====================
 function navigateStep(delta) {
     showStep(currentStep + delta);
 }
 
+function navigateStepTo(index) {
+    showStep(index);
+}
+
+function navigateStepToLast() {
+    if (currentSimulation && currentSimulation.steps) {
+        showStep(currentSimulation.steps.length - 1);
+    }
+}
+
 function toggleAutoPlay() {
-    const btn = document.getElementById('btnAutoPlay');
+    const playIcon = document.getElementById('playIcon');
+    const playText = document.getElementById('playText');
+    const autoPlayBtn = document.getElementById('btnAutoPlay');
 
     if (autoPlayInterval) {
         // Stop
         clearInterval(autoPlayInterval);
         autoPlayInterval = null;
-        btn.innerHTML = '<i class="fas fa-circle-play me-1"></i>Play';
-        btn.classList.remove('btn-info');
-        btn.classList.add('btn-outline-info');
+        playIcon.className = 'fas fa-play';
+        playText.textContent = 'Play';
+        autoPlayBtn.classList.remove('btn-danger');
     } else {
-        // Start
-        const speed = parseInt(document.getElementById('playSpeed').value);
+        // If at the end, restart from beginning
+        if (currentSimulation && currentStep >= currentSimulation.steps.length - 1) {
+            showStep(0);
+        }
+
+        const speedVal = parseInt(document.getElementById('playSpeed').value);
+        // Map 200..2000 to delay (invert: higher slider = faster)
+        const delay = 2200 - speedVal;
+
+        playIcon.className = 'fas fa-pause';
+        playText.textContent = 'Pause';
+        autoPlayBtn.classList.add('btn-danger');
+
         autoPlayInterval = setInterval(() => {
-            if (currentStep < currentSimulation.steps.length - 1) {
+            if (currentSimulation && currentStep < currentSimulation.steps.length - 1) {
                 navigateStep(1);
             } else {
-                toggleAutoPlay(); // Stop when done
+                toggleAutoPlay(); // Finished
             }
-        }, 2200 - speed); // Invert so higher value = faster
-
-        btn.innerHTML = '<i class="fas fa-circle-pause me-1"></i>Pause';
-        btn.classList.remove('btn-outline-info');
-        btn.classList.add('btn-info');
+        }, delay);
     }
 }
 
-// ==================== COMPARISON ====================
-function renderComparisonTable(result) {
-    const html = result.results.map(res => {
-        const isBest = res.algorithm === result.best_algorithm;
-        const rowClass = isBest ? 'best-row' : '';
+// ==================== COMPARISON MODE RENDERING ====================
+function renderComparisonTable(data) {
+    const tbody = document.getElementById('comparisonTableBody');
+    let html = '';
 
-        return `<tr class="${rowClass}">
-            <td><strong>${res.algorithm}</strong>${isBest ? ' <i class="fas fa-trophy text-warning ms-1"></i>' : ''}</td>
-            <td>${res.page_faults}</td>
-            <td>${res.page_hits}</td>
-            <td>${res.hit_ratio}%</td>
-            <td>${res.fault_ratio}%</td>
-        </tr>`;
-    }).join('');
+    data.results.forEach(res => {
+        const isBest = res.algorithm === data.best_algorithm;
+        const rowClass = isBest ? 'table-success bg-opacity-10' : '';
 
-    document.getElementById('compTable').innerHTML = html;
+        html += `
+            <tr class="${rowClass}">
+                <td class="fw-bold">
+                    <span class="text-teal">${res.algorithm}</span>
+                    ${isBest ? '<span class="badge bg-warning text-dark ms-2"><i class="fas fa-trophy"></i> Best</span>' : ''}
+                </td>
+                <td class="text-center font-monospace fw-bold text-danger">${res.page_faults}</td>
+                <td class="text-center font-monospace fw-bold text-success">${res.page_hits}</td>
+                <td class="text-center font-monospace text-warning">${res.page_replacements}</td>
+                <td class="text-center font-monospace text-teal">${res.hit_ratio}%</td>
+                <td class="text-center font-monospace text-danger">${res.fault_ratio}%</td>
+            </tr>
+        `;
+    });
 
-    // Best algo note
-    const best = result.results.find(r => r.algorithm === result.best_algorithm);
-    document.getElementById('bestAlgoNote').innerHTML = `
-        <i class="fas fa-check-circle me-2"></i>
-        <strong>${best.algorithm}</strong> performed best with only <strong>${best.page_faults} page faults</strong> for this reference string.
-    `;
+    tbody.innerHTML = html;
+
+    // Best Algo Callout
+    const best = data.results.find(r => r.algorithm === data.best_algorithm);
+    const calloutEl = document.getElementById('bestAlgorithmCallout');
+    if (best) {
+        calloutEl.innerHTML = `
+            <i class="fas fa-circle-check fs-5 text-success"></i>
+            <div>
+                <strong>${best.algorithm}</strong> achieved the best memory efficiency with only
+                <strong>${best.page_faults} page faults</strong> (${best.hit_ratio}% Hit Ratio) across the reference sequence.
+            </div>
+        `;
+    }
 }
 
-function renderComparisonChart(result) {
-    const ctx = document.getElementById('compChart').getContext('2d');
+function renderComparisonBarChart(data) {
+    const ctx = document.getElementById('compBarChart').getContext('2d');
+    if (compBarChart) compBarChart.destroy();
 
-    // Destroy existing
-    if (compChart) compChart.destroy();
+    const labels = data.results.map(r => r.algorithm);
+    const faults = data.results.map(r => r.page_faults);
+    const hits = data.results.map(r => r.page_hits);
 
-    const labels = result.results.map(r => r.algorithm);
-    const faults = result.results.map(r => r.page_faults);
-    const hits = result.results.map(r => r.page_hits);
-
-    compChart = new Chart(ctx, {
+    compBarChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -500,16 +804,18 @@ function renderComparisonChart(result) {
                 {
                     label: 'Page Faults',
                     data: faults,
-                    backgroundColor: 'rgba(237,66,69,.6)',
-                    borderColor: '#ed4245',
-                    borderWidth: 1
+                    backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                    borderColor: '#f43f5e',
+                    borderWidth: 1.5,
+                    borderRadius: 4
                 },
                 {
                     label: 'Page Hits',
                     data: hits,
-                    backgroundColor: 'rgba(87,242,135,.6)',
-                    borderColor: '#57f287',
-                    borderWidth: 1
+                    backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                    borderColor: '#10b981',
+                    borderWidth: 1.5,
+                    borderRadius: 4
                 }
             ]
         },
@@ -517,29 +823,38 @@ function renderComparisonChart(result) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: '#c9d1d9' } }
+                legend: {
+                    labels: { color: '#cbd5e1', font: { size: 11 } }
+                }
             },
             scales: {
-                x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
-                y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+                x: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#94a3b8', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                }
             }
         }
     });
 }
 
-// ==================== CHARTS ====================
-function renderHitFaultChart(result) {
-    const ctx = document.getElementById('hitFaultChart').getContext('2d');
-    if (hitFaultChart) hitFaultChart.destroy();
+// ==================== INDIVIDUAL CHARTS ====================
+function renderHitFaultDoughnut(hits, faults) {
+    const ctx = document.getElementById('hitFaultDoughnutChart').getContext('2d');
+    if (hitFaultDoughnutChart) hitFaultDoughnutChart.destroy();
 
-    hitFaultChart = new Chart(ctx, {
+    hitFaultDoughnutChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Hits', 'Faults'],
+            labels: ['Page Hits', 'Page Faults'],
             datasets: [{
-                data: [result.page_hits, result.page_faults],
-                backgroundColor: ['rgba(87,242,135,.6)', 'rgba(237,66,69,.6)'],
-                borderColor: ['#57f287', '#ed4245'],
+                data: [hits, faults],
+                backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+                borderColor: ['#10b981', '#f43f5e'],
                 borderWidth: 2
             }]
         },
@@ -547,60 +862,67 @@ function renderHitFaultChart(result) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { labels: { color: '#c9d1d9' } }
-            }
-        }
-    });
-}
-
-function renderFaultTimeChart(result) {
-    const ctx = document.getElementById('faultTimeChart').getContext('2d');
-    if (faultTimeChart) faultTimeChart.destroy();
-
-    // Compute cumulative faults
-    let cumulative = 0;
-    const data = result.steps.map(step => {
-        if (step.result === 'FAULT') cumulative++;
-        return cumulative;
-    });
-
-    faultTimeChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: result.steps.map(s => s.step),
-            datasets: [{
-                label: 'Cumulative Faults',
-                data: data,
-                borderColor: '#ed4245',
-                backgroundColor: 'rgba(237,66,69,.2)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: '#c9d1d9' } }
-            },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Step', color: '#8b949e' },
-                    ticks: { color: '#8b949e' },
-                    grid: { color: '#21262d' }
-                },
-                y: {
-                    title: { display: true, text: 'Page Faults', color: '#8b949e' },
-                    ticks: { color: '#8b949e' },
-                    grid: { color: '#21262d' }
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#cbd5e1', boxWidth: 12 }
                 }
             }
         }
     });
 }
 
-// ==================== RESET ====================
+function renderCumulativeFaultLine(steps) {
+    const ctx = document.getElementById('cumulativeFaultLineChart').getContext('2d');
+    if (cumulativeFaultLineChart) cumulativeFaultLineChart.destroy();
+
+    let cumulative = 0;
+    const dataPoints = steps.map(step => {
+        if (step.result === 'FAULT') cumulative++;
+        return cumulative;
+    });
+
+    cumulativeFaultLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: steps.map(s => `#${s.step}`),
+            datasets: [{
+                label: 'Cumulative Page Faults',
+                data: dataPoints,
+                borderColor: '#f43f5e',
+                backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.25,
+                pointBackgroundColor: '#f43f5e',
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#cbd5e1', font: { size: 11 } }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Simulation Step', color: '#94a3b8', font: { size: 10 } },
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Fault Count', color: '#94a3b8', font: { size: 10 } },
+                    ticks: { color: '#94a3b8', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                }
+            }
+        }
+    });
+}
+
+// ==================== RESET SIMULATION ====================
 function resetSimulation() {
     currentSimulation = null;
     currentStep = 0;
@@ -609,67 +931,46 @@ function resetSimulation() {
     if (autoPlayInterval) {
         clearInterval(autoPlayInterval);
         autoPlayInterval = null;
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const autoPlayBtn = document.getElementById('btnAutoPlay');
+        if (playIcon) playIcon.className = 'fas fa-play';
+        if (playText) playText.textContent = 'Play';
+        if (autoPlayBtn) autoPlayBtn.classList.remove('btn-danger');
     }
 
-    // Destroy charts
-    if (hitFaultChart) { hitFaultChart.destroy(); hitFaultChart = null; }
-    if (faultTimeChart) { faultTimeChart.destroy(); faultTimeChart = null; }
-    if (compChart) { compChart.destroy(); compChart = null; }
+    // Destroy existing charts
+    if (hitFaultDoughnutChart) { hitFaultDoughnutChart.destroy(); hitFaultDoughnutChart = null; }
+    if (cumulativeFaultLineChart) { cumulativeFaultLineChart.destroy(); cumulativeFaultLineChart = null; }
+    if (compBarChart) { compBarChart.destroy(); compBarChart = null; }
 
-    // Show empty state
+    // Toggle Visibility back to empty state
     document.getElementById('simContent').classList.add('d-none');
     document.getElementById('emptyState').classList.remove('d-none');
 
-    // Clear form
-    document.getElementById('refString').value = '7 0 1 2 0 3 0 4 2 3 0 3 2';
-    document.getElementById('numFrames').value = 3;
-    document.getElementById('frameDisplay').textContent = 3;
-    document.getElementById('scenarioSelect').value = '';
-    document.getElementById('scenarioDesc').textContent = '';
+    // Reset default scenario if available
+    if (hospitalScenarios.length > 0) {
+        selectScenario(hospitalScenarios[0].id);
+    }
 
+    selectAlgorithm('FIFO');
     hideError();
     document.getElementById('refStringError').textContent = '';
-
-    // Reset algorithm to FIFO
-    document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('algo-btn-active'));
-    document.querySelector('.algo-btn[data-algo="FIFO"]').classList.add('algo-btn-active');
-    selectedAlgorithm = 'FIFO';
-
-    // Reset auto-play button
-    const btn = document.getElementById('btnAutoPlay');
-    btn.innerHTML = '<i class="fas fa-circle-play me-1"></i>Play';
-    btn.classList.remove('btn-info');
-    btn.classList.add('btn-outline-info');
 }
 
 // ==================== ERROR HANDLING ====================
 function showError(message) {
-    document.getElementById('errorText').textContent = message;
-    document.getElementById('errorBanner').classList.remove('d-none');
-}
-
-function hideError() {
-    document.getElementById('errorBanner').classList.add('d-none');
-}
-
-// ==================== MULTI-PROCESS (BONUS) ====================
-function toggleMultiProcess() {
-    const body = document.getElementById('multiProcBody');
-    const btn = document.getElementById('btnToggleMultiProc');
-    const icon = btn.querySelector('i');
-
-    if (body.style.display === 'none') {
-        body.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
-    } else {
-        body.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+    const errorBanner = document.getElementById('errorBanner');
+    const errorText = document.getElementById('errorText');
+    if (errorBanner && errorText) {
+        errorText.textContent = message;
+        errorBanner.classList.remove('d-none');
     }
 }
 
-// Initially hide multi-process section
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('multiProcBody').style.display = 'none';
-});
+function hideError() {
+    const errorBanner = document.getElementById('errorBanner');
+    if (errorBanner) {
+        errorBanner.classList.add('d-none');
+    }
+}
